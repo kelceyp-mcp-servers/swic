@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+# SWIC Mode - Simple script launcher using fish shell
+# Creates fish functions for all scripts in the scripts/ directory
+
+set -euo pipefail
+
+# Clear the screen
+clear
+
+# Check if fish is installed
+if ! command -v fish &> /dev/null; then
+    echo "Error: fish shell is not installed"
+    echo ""
+    echo "To install fish:"
+    echo "  macOS:    brew install fish"
+    echo "  Ubuntu:   sudo apt-get install fish"
+    echo "  Arch:     sudo pacman -S fish"
+    echo ""
+    exit 1
+fi
+
+# Get the directory where this script lives
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Build the fish initialization commands
+FISH_INIT=""
+
+# Add greeting
+FISH_INIT+='set -g fish_greeting "SWIC mode (type help for available commands)"'$'\n'
+
+# Find all .sh and .ts scripts in scripts/ (excluding scripts/swic-mode/ if it exists)
+while IFS= read -r script_path; do
+    # Skip scripts/swic-mode/ directory if it exists
+    if [[ "$script_path" == *"/scripts/swic-mode/"* ]]; then
+        continue
+    fi
+
+    # Get the script name without extension - just use the basename
+    func_name=$(basename "$script_path" | sed 's/\.[^.]*$//')
+
+    # Determine runner based on extension
+    if [[ "$script_path" == *.ts ]]; then
+        runner="bun"
+    else
+        runner="bash"
+    fi
+
+    # Add function definition
+    FISH_INIT+="function $func_name"$'\n'
+    FISH_INIT+="    $runner '$script_path' \$argv"$'\n'
+    FISH_INIT+="end"$'\n'
+
+done < <(find "$SCRIPT_DIR/scripts" -type f \( -name "*.sh" -o -name "*.ts" \) | sort)
+
+# Add help function
+FISH_INIT+='function help --description "List all available commands"'$'\n'
+FISH_INIT+='    echo "Available commands:"'$'\n'
+FISH_INIT+='    echo ""'$'\n'
+
+# Get list of all functions we created (excluding help itself)
+while IFS= read -r script_path; do
+    # Skip scripts/swic-mode/ directory if it exists
+    if [[ "$script_path" == *"/scripts/swic-mode/"* ]]; then
+        continue
+    fi
+
+    # Get the script name without extension - just use the basename
+    func_name=$(basename "$script_path" | sed 's/\.[^.]*$//')
+
+    # Determine runner based on extension
+    if [[ "$script_path" == *.ts ]]; then
+        runner="bun"
+    else
+        runner="bash"
+    fi
+
+    # Try to get description from script
+    FISH_INIT+="    set -l desc ("
+    FISH_INIT+="$runner '$script_path' --description 2>/dev/null; or echo \"\")"$'\n'
+    FISH_INIT+="    if test -n \"\$desc\""$'\n'
+    FISH_INIT+="        printf \"  %-25s %s\\n\" \"$func_name\" \"\$desc\""$'\n'
+    FISH_INIT+="    else"$'\n'
+    FISH_INIT+="        printf \"  %-25s\\n\" \"$func_name\""$'\n'
+    FISH_INIT+="    end"$'\n'
+
+done < <(find "$SCRIPT_DIR/scripts" -type f \( -name "*.sh" -o -name "*.ts" \) | sort)
+
+FISH_INIT+='    echo ""'$'\n'
+FISH_INIT+='    echo "Commands should support --help and --usage flags"'$'\n'
+FISH_INIT+='end'$'\n'
+
+# Add custom prompt
+FISH_INIT+='function fish_prompt'$'\n'
+FISH_INIT+='    # Get current git branch'$'\n'
+FISH_INIT+='    set -l git_branch (git branch --show-current 2>/dev/null)'$'\n'
+FISH_INIT+='    if test -n "$git_branch"'$'\n'
+FISH_INIT+='        set_color cyan'$'\n'
+FISH_INIT+='        echo -n "($git_branch) "'$'\n'
+FISH_INIT+='        set_color normal'$'\n'
+FISH_INIT+='    else'$'\n'
+FISH_INIT+='        set_color cyan'$'\n'
+FISH_INIT+='        echo -n "(no-git) "'$'\n'
+FISH_INIT+='        set_color normal'$'\n'
+FISH_INIT+='    end'$'\n'
+FISH_INIT+='    echo -n (prompt_pwd) " > "'$'\n'
+FISH_INIT+='end'$'\n'
+
+# Launch fish with the initialization commands
+exec fish -C "$FISH_INIT"
