@@ -7,12 +7,12 @@ You will manage the workflow, maintaining and communicating state and task subag
 
 This session we are delivering subtask 006 of story 002.
 
-see `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw/Stories/` for stories
+see `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic/Stories/` for stories
 
 Story is here
-`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw/Stories/In-Progress/002-minimal-create-cartridge/`
+`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic/Stories/In-Progress/002-minimal-create-cartridge/`
 
-it is essential to read .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw/Stories/In-Progress/002-minimal-create-cartridge/subtasks/To-Do/006-realignment-to-correct-misconceptions/comments/message-from-user.md (both for you and all subagent you prompt)
+it is essential to read .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic/Stories/In-Progress/002-minimal-create-cartridge/subtasks/To-Do/006-realignment-to-correct-misconceptions/comments/message-from-user.md (both for you and all subagent you prompt)
 
 You need to understand structure of subtasks (described below) plus you will need to share this information with the subagents when you prompt them
 
@@ -64,8 +64,8 @@ list relevant cartridges applicable to the checklist items below
 [ ] Perform a green build check (if the build is red, it doesnt matter who did it - we stop and fix it)
 
 ## Error Infrastructure
-- [ ] Using TDD, build error factory that creates typed ClawError objects with string codes (...)
-- [ ] Using TDD, build type guard function isClawError() that safely narrows unknown to ClawError
+- [ ] Using TDD, build error factory that creates typed swicError objects with string codes (...)
+- [ ] Using TDD, build type guard function isswicError() that safely narrows unknown to swicError
 - etc.
 ```
 

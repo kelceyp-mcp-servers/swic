@@ -99,7 +99,7 @@ docker-claude.tar
 # MCP/Claude specific
 .mcp-stories/
 .claude/
-.claw/
+.swic/
 
 # Bun
 bun.lockb

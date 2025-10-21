@@ -8,7 +8,7 @@ For this session you will supervise the construction (i.e. writing) of design do
 This session we are supervising the creation/update of the design for story {{storyId}}.
 
 # Required reading
-Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
+Using `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
 - design-structure.md
 - The story's spec/spec.md (to understand WHAT needs to be built)
 
@@ -19,7 +19,7 @@ Ensure that when you prompt subagents, you include the above content under `# Re
 Note:
 - A continuation is where an agent didn't finish a write, review or refine task and needed to be continued
 - An iteration is one cycle of write, review, review feedback. Entering refine is akin to write but increments the iteration counter
-- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
+- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
 - The design follows a folder structure to support the documentation process
 
 **Design Folder Structure:**
@@ -36,12 +36,12 @@ design/
 
 ## Step 1 - Write Design
 I need you to task a 'design' subagent to write the design. This includes:
-- Creating the design folder (if it doesn't exist): `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/`
+- Creating the design folder (if it doesn't exist): `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/`
 - Creating the high-level-design.md file (required starting point)
 - Creating additional domain-specific design documents as needed
 - Creating the comments/design-notes-1.md file (which captures their decisions, rationale and thought processes throughout the writing task)
 
-The 'design' agent writing the design needs to read the story spec, whatever cartridges they think are relevant, and any existing design documents. Cartridges can be read using `mcp__claw-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
+The 'design' agent writing the design needs to read the story spec, whatever cartridges they think are relevant, and any existing design documents. Cartridges can be read using `mcp__swic-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
 
 They also need to be told the design format from design-structure.md cartridge and should reference the exemplar design mentioned in that cartridge.
 
@@ -110,15 +110,15 @@ Once the design is finalized (whether after initial write or after refinement), 
 
 First, list all design documents created:
 ```bash
-ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/*.md 2>/dev/null | grep -v '/comments/'
+ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/*.md 2>/dev/null | grep -v '/comments/'
 ```
 
 Read the current required-reading.md:
 ```
-mcp__claw-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
+mcp__swic-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
 ```
 
-Then update it using `mcp__claw-dev__cartridge_create` with:
+Then update it using `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/required-reading.md"
 - content: The existing content plus all design document paths
@@ -127,15 +127,15 @@ Add each design document to the "From the file system" section. Example for a st
 ```markdown
 The following is required reading for story-{{storyId}} and follow reading links recursively.
 
-For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
+For each item below use `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
 
 - glossary.md
 - problem-statements/story-{{storyId}}/story-problem-statement.md
 
 From the file system, also read the spec and relevant design documentation:
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/high-level-design.md
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/testing-strategy.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/high-level-design.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/testing-strategy.md
 ```
 
 **Important:** Include ALL .md files from the design/ folder except those in design/comments/.

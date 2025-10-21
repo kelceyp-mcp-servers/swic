@@ -1,6 +1,6 @@
 ---
 audience: claude code
-abstract: Retrospective on mcp-stories - what worked, what got messy, and why claw exists
+abstract: Retrospective on mcp-stories - what worked, what got messy, and why swic exists
 ---
 
 # mcp-stories Lessons Learned
@@ -25,7 +25,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** 75+ cartridges created and actively used across system/shared/project
 
-**Carry forward to claw:** ✓ Cartridges are a proven pattern
+**Carry forward to swic:** ✓ Cartridges are a proven pattern
 
 ### 2. Template Rendering (Handlebars + YAML)
 **Pattern:** Parameterized prompts with validation
@@ -39,7 +39,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** 27 prompt templates, supervisor successfully orchestrated multi-agent workflows
 
-**Carry forward to claw:** ✓ Template rendering is valuable, but design clean from scratch
+**Carry forward to swic:** ✓ Template rendering is valuable, but design clean from scratch
 
 ### 3. Iteration/Continuation Pattern
 **Pattern:** Distinguish between feedback cycles and within-session resumption
@@ -52,7 +52,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** Templates successfully handled both fresh starts and continuations
 
-**Carry forward to claw:** ✓ Pattern is sound, but needs cleaner implementation
+**Carry forward to swic:** ✓ Pattern is sound, but needs cleaner implementation
 
 ### 4. Supervisor Orchestration
 **Pattern:** State machine supervising specialized agents
@@ -65,7 +65,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** 327-line supervisor template successfully coordinated multi-agent workflows
 
-**Carry forward to claw:** ✓ Orchestration is powerful, but state machines need refinement
+**Carry forward to swic:** ✓ Orchestration is powerful, but state machines need refinement
 
 ### 5. Security-First Path Validation
 **Pattern:** Whitelist approach to prevent directory traversal
@@ -78,7 +78,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** No security incidents, clear error messages when users made mistakes
 
-**Carry forward to claw:** ✓ Security pattern is solid
+**Carry forward to swic:** ✓ Security pattern is solid
 
 ### 6. MCP Tool Approach vs Slash Commands
 **Pattern:** Programmatic tools instead of user-only slash commands
@@ -92,7 +92,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Evidence:** 50+ tools enabled comprehensive document/story/subtask management
 
-**Carry forward to claw:** ✓ MCP tools > slash commands for agent orchestration
+**Carry forward to swic:** ✓ MCP tools > slash commands for agent orchestration
 
 ## What Got Messy
 
@@ -107,7 +107,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Moved too fast to add features before solidifying foundation
 
-**Lesson for claw:** Build thin exemplary vertical slice BEFORE expanding
+**Lesson for swic:** Build thin exemplary vertical slice BEFORE expanding
 
 ### 2. Multiple Template Syntaxes
 **Problem:** ${} (legacy) and {{}} (Handlebars) coexisting
@@ -120,7 +120,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Started with simple replacement, evolved to Handlebars, didn't migrate fully
 
-**Lesson for claw:** Pick one approach and stick to it from the start
+**Lesson for swic:** Pick one approach and stick to it from the start
 
 ### 3. Unclear What's Historical vs Current
 **Problem:** Hard to know which code/templates were active vs experiments
@@ -133,7 +133,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Rapid iteration without pruning old approaches
 
-**Lesson for claw:** Mark experimental work clearly, remove when superseded
+**Lesson for swic:** Mark experimental work clearly, remove when superseded
 
 ### 4. Multi-Repository Complexity
 **Problem:** Four separate repositories for data (mcp-stories, sdlc-system, sdlc-shared, mcp-stories-sdlc)
@@ -146,7 +146,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Premature abstraction (shared before knowing what should be shared)
 
-**Lesson for claw:** Centralize in ~/.claw/ until proven need for separation
+**Lesson for swic:** Centralize in ~/.swic/ until proven need for separation
 
 ### 5. Code Not Reviewed Closely Enough
 **Problem:** User didn't review implementations carefully before moving on
@@ -159,7 +159,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Too much trust in initial implementations without verification
 
-**Lesson for claw:** Review every implementation carefully before accepting it
+**Lesson for swic:** Review every implementation carefully before accepting it
 
 ### 6. Accumulated Complexity
 **Problem:** System grew complex without refactoring
@@ -172,7 +172,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Additive development without subtraction
 
-**Lesson for claw:** Refactor aggressively, remove duplication, keep it simple
+**Lesson for swic:** Refactor aggressively, remove duplication, keep it simple
 
 ### 7. No Clear Versioning Strategy
 **Problem:** Templates had no versioning or compatibility markers
@@ -184,7 +184,7 @@ Without careful review and refinement of the initial implementation, complexity 
 
 **Root cause:** Didn't plan for evolution from the start
 
-**Lesson for claw:** Version templates if they become critical infrastructure
+**Lesson for swic:** Version templates if they become critical infrastructure
 
 ## Architecture Lessons
 
@@ -288,7 +288,7 @@ From actual subtasks in mcp-stories-sdlc:
 
 **Result:** Lots of features, messy foundation
 
-**claw approach:** Build thin vertical slice to exemplary quality
+**swic approach:** Build thin vertical slice to exemplary quality
 
 **Goal:**
 1. Pick ONE small feature
@@ -306,7 +306,7 @@ From actual subtasks in mcp-stories-sdlc:
 - Security-first (validated from start)
 - No technical debt (pay as you go)
 
-## Specific Anti-Patterns to Avoid in claw
+## Specific Anti-Patterns to Avoid in swic
 
 1. **Don't add features before finessing foundation**
    - Resist temptation to expand quickly
@@ -366,9 +366,9 @@ It's about:
 - Avoiding rework later
 - Moving fast sustainably (not just fast)
 
-mcp-stories proved the concepts. claw will implement them cleanly.
+mcp-stories proved the concepts. swic will implement them cleanly.
 
-## Using This Knowledge in claw
+## Using This Knowledge in swic
 
 **Don't treat mcp-stories as:**
 - Implementation guide to copy
@@ -380,6 +380,6 @@ mcp-stories proved the concepts. claw will implement them cleanly.
 - Map of problem space
 - Warning signs to avoid
 - Reference when exploring solutions
-- Context for understanding why claw exists
+- Context for understanding why swic exists
 
-**Remember:** claw is the opportunity to do it right, informed by mcp-stories experience but not constrained by its implementations.
+**Remember:** swic is the opportunity to do it right, informed by mcp-stories experience but not constrained by its implementations.

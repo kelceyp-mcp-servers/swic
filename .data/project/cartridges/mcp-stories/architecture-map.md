@@ -242,9 +242,9 @@ All channels access the same **Core API**:
 └── mcp-stories-sdlc/         # Project data
 ```
 
-### claw (centralized)
+### swic (centralized)
 ```
-~/.claw/
+~/.swic/
 ├── system/                   # Equivalent to sdlc-system
 ├── shared/                   # Equivalent to sdlc-shared
 └── projects/{project}/       # Equivalent to mcp-stories-sdlc

@@ -46,7 +46,7 @@ list relevant cartridges applicable to the checklist items below
 [ ] Perform a green build check (if the build is red, it doesnt matter who did it - we stop and fix it)
 
 ## Error Infrastructure
-- [ ] Using TDD, build error factory that creates typed ClawError objects with string codes (...)
-- [ ] Using TDD, build type guard function isClawError() that safely narrows unknown to ClawError
+- [ ] Using TDD, build error factory that creates typed swicError objects with string codes (...)
+- [ ] Using TDD, build type guard function isswicError() that safely narrows unknown to swicError
 - etc.
 ```

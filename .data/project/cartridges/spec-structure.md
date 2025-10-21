@@ -20,7 +20,7 @@ Stories/
 ## Exemplar Spec
 
 For a complete reference example of spec content, see:
-`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/002-minimal-create-cartridge/spec.md`
+`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/002-minimal-create-cartridge/spec.md`
 
 **Note:** The exemplar is currently in the old flat structure (spec.md at story root). Going forward, specs use the folder structure shown above.
 

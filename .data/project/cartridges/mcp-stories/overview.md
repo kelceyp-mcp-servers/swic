@@ -1,6 +1,6 @@
 ---
 audience: claude code
-abstract: Historical overview of the mcp-stories project and why claw was created
+abstract: Historical overview of the mcp-stories project and why swic was created
 ---
 
 # mcp-stories Project Overview
@@ -50,17 +50,17 @@ Located at: `/Users/paulkelcey/Dev/gh/kelceyp-mcp-servers/mcp-stories`
 - **2025-10-06**: sdlc-system, sdlc-shared (infrastructure repos)
 - **2025-10-08**: mcp-stories-sdlc (project data repo)
 - **2025-10-09**: mcp-stories (main project)
-- **2025-10-18**: claw (current iteration)
+- **2025-10-18**: swic (current iteration)
 
-## Why Rebuild as claw?
+## Why Rebuild as swic?
 
 **The problem:**
 mcp-stories got messy because the first slice wasn't properly finessed. Without careful review and refinement of the initial implementation, complexity accumulated.
 
-**claw's approach:**
+**swic's approach:**
 - **Finesse the first slice** - Build a thin, exemplary vertical slice before expanding
 - **Clean start with learnings** - Apply lessons from mcp-stories without cargo-culting messy implementations
-- **Centralized data** - All data in `~/.claw/` instead of multiple repos
+- **Centralized data** - All data in `~/.swic/` instead of multiple repos
 - **Composition root pattern** - Better dependency management
 - **Logical path APIs** - Cleaner abstractions for cartridge access
 
@@ -79,7 +79,7 @@ mcp-stories got messy because the first slice wasn't properly finessed. Without 
 - OAuth authentication
 - Multi-agent coordination
 
-**Phase 3 (claw):** Refined implementation
+**Phase 3 (swic):** Refined implementation
 - Learning from mcp-stories mistakes
 - Better architecture from the start
 - Focus on exemplary first slice
@@ -100,7 +100,7 @@ mcp-stories got messy because the first slice wasn't properly finessed. Without 
 - Multiple template syntaxes (${} vs {{}})
 - Accumulation of technical debt
 
-## Relationship to claw
+## Relationship to swic
 
 These mcp-stories cartridges serve as **historical reference only:**
 - Document what existed, where, and why
@@ -111,6 +111,6 @@ These mcp-stories cartridges serve as **historical reference only:**
 **Not intended as:**
 - Implementation guide to copy
 - Best practices documentation
-- Architectural blueprint for claw
+- Architectural blueprint for swic
 
-claw will solve similar problems but design solutions from scratch, using mcp-stories as context for understanding the problem domain.
+swic will solve similar problems but design solutions from scratch, using mcp-stories as context for understanding the problem domain.

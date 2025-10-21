@@ -8,7 +8,7 @@ For this session you will supervise the construction (i.e. preparation) of a sub
 This session we are supervising the preparation of subtask {{subtaskId}} of story {{storyId}}.
 
 # Required reading
-Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
+Using `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
 - problem-statements/story-{{storyId}}/required-reading.md
 - {{additionalReading}}
 
@@ -19,18 +19,18 @@ Ensure that when you prompt subagents, you include the above content under `# Re
 Note:
 - A continuation is where an agent didn't finish a prepare, review or refine task and needed to be continued
 - An iteration is one cycle of prepare, review, review feedback. Entering refine is akin to prepare but increments the iteration counter
-- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
+- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
 
 ## Step 1 - Prepare Subtask
 I need you to task a 'tdd-engineer' subagent to prepare the subtask. This includes creating the folder representing the subtask (if it doesn't exist), creating the subtask.md that exists in the folder at the top level and creating the comments/prep-phase/planning-notes-1.md file (which captures their decisions, rationale and thought processes through-out the preparation task)
 
-The 'tdd-engineer' agent preparing the subtask needs to read the story spec, design document(s) and whatever cartridges they think are relevant. Cartridges can be read using `mcp__claw-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
+The 'tdd-engineer' agent preparing the subtask needs to read the story spec, design document(s) and whatever cartridges they think are relevant. Cartridges can be read using `mcp__swic-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
 
 They also need to read the subtask.mds (but not any comments/) of all the subtasks that have come before this one for this story. They need to build up their understanding of what should available to build upon at the point in time when this subtask will be worked on.
 
 They also need to be told the subtask format (described above)
 
-Make sure they create the new subtask in `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/To-Do/`
+Make sure they create the new subtask in `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/To-Do/`
 
 The 'tdd-engineer' subagent's mission is to work out what's outstanding in order to meet the acceptance criteria in the story spec and pick the next bit of work that makes the most sense. They only need to define a self-contained cohesive bite sized piece. They need to ensure that we don't have a red build spanning subtasks. They should try and keep it under 20 checklist items.
 
@@ -80,17 +80,17 @@ Once the subtask is finalized (whether after initial preparation or after refine
 
 First, list all completed subtasks for this story (from the Done folder):
 ```bash
-ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/ 2>/dev/null | sort
+ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/ 2>/dev/null | sort
 ```
 
 Keep only the **3 most recent** subtasks. If there are fewer than 3, include all of them.
 
 Read the current required-reading.md:
 ```
-mcp__claw-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
+mcp__swic-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
 ```
 
-Then update it using `mcp__claw-dev__cartridge_create` with:
+Then update it using `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/required-reading.md"
 - content: The existing content with updated subtask references
@@ -99,19 +99,19 @@ Add a subtasks section at the end. Example with 3 recent subtasks (001, 002, 003
 ```markdown
 The following is required reading for story-{{storyId}} and follow reading links recursively.
 
-For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
+For each item below use `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
 
 - glossary.md
 - problem-statements/story-{{storyId}}/story-problem-statement.md
 
 From the file system, also read the spec and relevant design documentation:
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/high-level-design.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/design/high-level-design.md
 
 Recent subtasks (sliding window of most recent 3):
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/001-subtask-name/subtask.md
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/002-subtask-name/subtask.md
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/003-subtask-name/subtask.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/001-subtask-name/subtask.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/002-subtask-name/subtask.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/subtasks/Done/003-subtask-name/subtask.md
 ```
 
 **Important:**

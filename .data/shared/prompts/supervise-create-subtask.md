@@ -7,10 +7,10 @@ You will manage the workflow, maintaining and communicating state and task subag
 
 This session we are preparing subtask 005 of story 002. 
 
-see `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw/Stories/`
+see `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic/Stories/`
 
 Story is here
-`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw/Stories/In-Progress/002-minimal-create-cartridge/`
+`.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic/Stories/In-Progress/002-minimal-create-cartridge/`
 
 We will leave it to the subagent to describe what the scope of the subtask is. They will 'bite off' whatever they think makes sense based on how much has been done to date and what is outstanding based on delivering the spec and the design.
 
@@ -64,8 +64,8 @@ list relevant cartridges applicable to the checklist items below
 [ ] Perform a green build check (if the build is red, it doesnt matter who did it - we stop and fix it)
 
 ## Error Infrastructure
-- [ ] Using TDD, build error factory that creates typed ClawError objects with string codes (...)
-- [ ] Using TDD, build type guard function isClawError() that safely narrows unknown to ClawError
+- [ ] Using TDD, build error factory that creates typed swicError objects with string codes (...)
+- [ ] Using TDD, build type guard function isswicError() that safely narrows unknown to swicError
 - etc.
 ```
 

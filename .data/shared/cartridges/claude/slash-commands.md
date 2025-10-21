@@ -73,7 +73,7 @@ description: Initialize a new story
 
 Load the init-story workflow and execute it.
 
-Use `mcp__claw-dev__cartridge_read {scope: "project", name: "workflows/init-story.md"}` and follow the instructions.
+Use `mcp__swic-dev__cartridge_read {scope: "project", name: "workflows/init-story.md"}` and follow the instructions.
 ```
 
 ### Constrained Tool Use
@@ -118,7 +118,7 @@ argument-hint: [story-id]
 Execute the create-spec workflow for story $1.
 
 Read the workflow cartridge:
-`mcp__claw-dev__cartridge_read {scope: "project", name: "workflows/create-spec.md"}`
+`mcp__swic-dev__cartridge_read {scope: "project", name: "workflows/create-spec.md"}`
 
 Then execute it with storyId=$1.
 ```

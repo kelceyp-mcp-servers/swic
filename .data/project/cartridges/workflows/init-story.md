@@ -14,7 +14,7 @@ This workflow guides you through initializing a new story by:
 This is a prerequisite for running the `create-spec.md` workflow.
 
 # Required reading
-Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}`, read the following:
+Using `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}`, read the following:
 - glossary.md
 
 # Workflow Steps
@@ -23,9 +23,9 @@ Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}`, read
 
 Scan the Stories directory to find existing story IDs:
 ```bash
-ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/Done/ \
-     .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/ \
-     .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/To-Do/ 2>/dev/null | \
+ls -1 .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/Done/ \
+     .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/ \
+     .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/To-Do/ 2>/dev/null | \
      grep -E '^[0-9]{3}-' | cut -d'-' -f1 | sort -u
 ```
 
@@ -40,14 +40,14 @@ Wait for user response before proceeding. Store the confirmed ID as `{{storyId}}
 Create the problem statement folder using bash:
 
 ```bash
-mkdir -p .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/cartridges/problem-statements/story-{{storyId}}
+mkdir -p .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/cartridges/problem-statements/story-{{storyId}}
 ```
 
 ## Step 3 - Create Initial Required Reading
 
 Create the initial required-reading.md file with minimal content.
 
-Use `mcp__claw-dev__cartridge_create` with:
+Use `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/required-reading.md"
 - content:
@@ -55,7 +55,7 @@ Use `mcp__claw-dev__cartridge_create` with:
 ```markdown
 The following is required reading for story-{{storyId}} and follow reading links recursively.
 
-For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
+For each item below use `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
 
 - glossary.md
 ```
@@ -137,7 +137,7 @@ Store the inferred name as `{{storyName}}`.
 
 Using all the information gathered from the interview, create the problem statement document.
 
-Use `mcp__claw-dev__cartridge_create` with:
+Use `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/story-problem-statement.md"
 - content: Follow the format below
@@ -215,7 +215,7 @@ Structure the problem statement following this template (adapt based on the info
 
 Update the required-reading.md file to include the newly created problem statement.
 
-Use `mcp__claw-dev__cartridge_create` with:
+Use `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/required-reading.md"
 - content:
@@ -223,7 +223,7 @@ Use `mcp__claw-dev__cartridge_create` with:
 ```markdown
 The following is required reading for story-{{storyId}} and follow reading links recursively.
 
-For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
+For each item below use `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
 
 - glossary.md
 - problem-statements/story-{{storyId}}/story-problem-statement.md
@@ -234,7 +234,7 @@ For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: 
 Create the story folder in the To-Do directory using bash:
 
 ```bash
-mkdir -p ".private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/To-Do/{{storyId}}-{{storyName}}"
+mkdir -p ".private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/To-Do/{{storyId}}-{{storyName}}"
 ```
 
 Confirm to the user: "Created story folder: `Stories/To-Do/{{storyId}}-{{storyName}}/`"
@@ -257,7 +257,7 @@ Next steps:
 1. You can now run the create-spec workflow to generate a specification
 2. Move the story to In-Progress when ready to start work
 3. Access via:
-   - mcp__claw-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
+   - mcp__swic-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
 ```
 
 Use `say -v Zoe "Paul"` to get the user's attention.

@@ -8,7 +8,7 @@ For this session you will supervise the construction (i.e. writing) of a story s
 This session we are supervising the creation/update of the spec for story {{storyId}}.
 
 # Required reading
-Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
+Using `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}`, read the following items (and follow nested instructions to read)
 - spec-structure.md
 - problem-statements/story-{{storyId}}/required-reading.md
 
@@ -19,7 +19,7 @@ Ensure that when you prompt subagents, you include the above content under `# Re
 Note:
 - A continuation is where an agent didn't finish a write, review or refine task and needed to be continued
 - An iteration is one cycle of write, review, review feedback. Entering refine is akin to write but increments the iteration counter
-- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
+- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
 - The spec follows a folder structure to support the documentation process
 
 **Spec Folder Structure:**
@@ -34,11 +34,11 @@ spec/
 
 ## Step 1 - Write Spec
 I need you to task a 'product-owner' subagent to write the spec. This includes:
-- Creating the spec folder (if it doesn't exist): `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/`
+- Creating the spec folder (if it doesn't exist): `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/`
 - Creating the spec.md file inside the spec folder
 - Creating the comments/spec-notes-1.md file (which captures their decisions, rationale and thought processes throughout the writing task)
 
-The 'product-owner' agent writing the spec needs to read whatever cartridges they think are relevant. Cartridges can be read using `mcp__claw-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
+The 'product-owner' agent writing the spec needs to read whatever cartridges they think are relevant. Cartridges can be read using `mcp__swic-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
 
 They also need to be told the spec format from spec-structure.md cartridge and should reference the exemplar spec mentioned in that cartridge.
 
@@ -104,30 +104,30 @@ Once the spec is finalized (whether after initial write or after refinement), up
 
 Read the current required-reading.md to see what's already there:
 ```
-mcp__claw-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
+mcp__swic-dev__cartridge_read {scope: "project", name: "problem-statements/story-{{storyId}}/required-reading.md"}
 ```
 
-Then update it using `mcp__claw-dev__cartridge_create` with:
+Then update it using `mcp__swic-dev__cartridge_create` with:
 - scope: "project"
 - name: "problem-statements/story-{{storyId}}/required-reading.md"
 - content: The existing content plus the new spec path
 
 Add this line to the "From the file system, also read" section:
 ```
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
 ```
 
 If the "From the file system" section doesn't exist yet, create it after the cartridge reads section:
 ```markdown
 The following is required reading for story-{{storyId}} and follow reading links recursively.
 
-For each item below use `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
+For each item below use `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}` and read each
 
 - glossary.md
 - problem-statements/story-{{storyId}}/story-problem-statement.md
 
 From the file system, also read the spec and relevant design documentation:
-- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
+- .private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/spec/spec.md
 ```
 
 ## Step 5 - Report and End Workflow

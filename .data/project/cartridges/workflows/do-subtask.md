@@ -8,7 +8,7 @@ For this session you will supervise the delivery (i.e. implementation) of a subt
 This session we are delivering subtask {{subtaskId}} of story {{storyId}}.
 
 # Required reading
-Using `mcp__claw-dev__cartridge_read {scope: "project", name: "{{item}}"}`, read the following items (and follow nested instructions to read)
+Using `mcp__swic-dev__cartridge_read {scope: "project", name: "{{item}}"}`, read the following items (and follow nested instructions to read)
 - problem-statements/story-{{storyId}}/required-reading.md
 
 Ensure that when you prompt subagents, you include the above content under `# Required reading` but excluding this line
@@ -18,7 +18,7 @@ Ensure that when you prompt subagents, you include the above content under `# Re
 Note:
 - A continuation is where an agent didn't finish delivery, review or refine task and needed to be continued
 - An iteration is one cycle of deliver, review, review feedback. Entering refine is akin to prepare but increments the iteration counter
-- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_claw-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
+- The story is located at `.private/projects/_Users_paulkelcey_Dev_gh_kelceyp-mcp-servers_swic-f7e4d327/Stories/In-Progress/{{storyId}}-{{storyName}}/`
 
 ## Step 1 - Deliver (Code) Subtask
 Move the subtask from `subtasks/To-Do/` to `subtasks/In-Progress/`
@@ -32,7 +32,7 @@ For each checklist item, and **before** moving onto the next checklist item, the
 
 The work isn't done until the implementation notes are updated and under no circumstances can the agent move onto the next checklist item until the one they are working on is complete.
 
-The 'tdd-engineer' agent delivering the subtask needs to read the story spec, design document(s), the subtask.md and whatever cartridges they think are relevant. Cartridges can be read using `mcp__claw-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
+The 'tdd-engineer' agent delivering the subtask needs to read the story spec, design document(s), the subtask.md and whatever cartridges they think are relevant. Cartridges can be read using `mcp__swic-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
 
 They also need to read the subtask.mds (but not any comments/) of all the subtasks that have come before this one for this story. They need to build up their understanding of what should be available to build upon at the point in time when this subtask is being worked on.
 
@@ -84,7 +84,7 @@ Task a 'tdd-engineer' subagent to plan the additional work. This is a build-phas
 
 I need you to task a 'tdd-engineer' subagent to update the subtask document. This will generally include adding additional checklist groups. They also need to create a comments/build-phase/planning-notes-x.md file to capture their thought processes.
 
-The 'tdd-engineer' agent planning the additional work needs to read the story spec, design document(s) and whatever cartridges they think are relevant. Cartridges can be read using `mcp__claw-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
+The 'tdd-engineer' agent planning the additional work needs to read the story spec, design document(s) and whatever cartridges they think are relevant. Cartridges can be read using `mcp__swic-dev__cartridge_read {scope: "shared", name: "{{cartridge-name}}"}` (something the subagent will also need to know).
 
 They also need to read the subtask.mds (but not any comments/) of all the subtasks that have come before this one for this story. They need to build up their understanding of what should be available to build upon at the point in time when this subtask is being worked on. They can check the code also.
 
