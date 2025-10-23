@@ -1,5 +1,5 @@
 **swic methodology:**
-- a methodolgy for using stories/subtasks/designs/specs etc. to externalise context for claude plus workflow, cartridges, prompt templates etc.
+- a methodolgy for using stories/subtasks/designs/specs etc. to externalise context for claude plus pipelines, cartridges, prompt templates etc.
 - can be performed manually without a software system (albeit is slightly tedious doing this although claude can help acting as the system)
 - for use on any software project where the user is using claude or another agentic agent
 - is being used to build the swic product (by claude instances working in the swic-src project)
@@ -14,8 +14,8 @@
 - uses the data-folder primarily (**not** the project folder although there will be some project folder related capabilities coming soon)
 
 **data-folder:**
-- part of the product and exists outside of swic-src
-- the ~/.swic/ folder stores the documents (files/folders) for the system but importantly is an implementation detail of swic
+- part of the product and exists at .data
+- the ~/.data/ folder stores the documents (files/folders) for the system but importantly is an implementation detail of swic
 - uses git to version control the files/folders here
 - contains system and shared folders accessible via swic to all claudes working on any project
 - contains a projects/ folder containing project scoped folders that are specific to each project that uses swic
@@ -31,7 +31,6 @@
 - we temporarily have created a symlink called .private/ so that claude can access data-folder inside project scoped permissions
 
 **dev-workflow** (particularly regarding manual testing)
-- likely superceded by the implementation in story 2 subtask 8
 - claude can run swic/ directly from src/ folder but:
     - needs an entry in .msp.json to do anything with it (typically in .mcp.json as swic-dev)
     - in order to pick up changes after changing code will need one of:

@@ -1,0 +1,35 @@
+{
+  "name": "swic",
+  "version": "0.1.0",
+  "description": "Story Workflow Integration Controller - MCP server for managing stories, subtasks, and pipelines",
+  "type": "module",
+  "main": "dist/server/Server.js",
+  "bin": {
+    "swic-mcp": "./dist/server/Server.js"
+  },
+  "scripts": {
+    "build-dist": "bun run scripts/server/build-dist.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "debug": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "author": "",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "workflow",
+    "story-management",
+    "pipeline-orchestration"
+  ]
+}

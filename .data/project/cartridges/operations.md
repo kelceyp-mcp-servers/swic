@@ -1,49 +1,47 @@
 # swic MCP Server Operations Guide
 
-## Running Modes
+## Building the Distribution
 
-The swic MCP server can run in two primary modes:
+The swic MCP server is built using the build-dist script:
 
-### 1. Development Mode (swic-dev)
-Running directly from source code in the swic-src/ project folder.
+```bash
+bun run build-dist
+```
 
-**Configuration:**
-- Entry in `.mcp.json` pointing to `src/mcp/main.ts`
-- Typically named `swic-dev`
+This runs `scripts/server/build-dist.ts` which:
+- Cleans the `dist/` directory
+- Builds `src/server/Server.ts` to `dist/server/Server.js`
+- Minifies the output with no source maps
+- Creates a single ~208KB bundle
 
-**Use cases:**
-- Active development on swic features
-- Testing changes immediately
-- Debugging MCP server behavior
+## MCP Configuration
 
-**Picking up code changes:**
-- **Option A**: Ask user to quit Claude and restart with `-c` flag
-  - Reloads the MCP server with latest code
-  - Continues previous conversation
-  
-- **Option B (Requires no help)**: Run `claude -p` via Bash
-  - The prompt you provide needs to ask claude for the tool usage you want
+The server is configured in `.mcp.json`:
 
-### 2. Production Mode (swic)
-Installed as an npm package in node_modules/.
-
-**Configuration:**
-- Entry in `.mcp.json` pointing to `@kelceyp/swic`
-- Typically named `swic`
-
-**Use cases:**
-- Using swic in non-swic projects
-- Testing the published version
-- Validating release candidates
+```json
+{
+  "mcpServers": {
+    "swic": {
+      "command": "bun",
+      "args": [
+        "run",
+        "dist/server/Server.js"
+      ]
+    }
+  }
+}
+```
 
 **Picking up code changes:**
-Requires full release cycle: (all performed by the user - don't do these yourself - stop ask the user to do it)
-1. Update version number at top of `package.json`
-2. Update version in `dependencies` section of `package.json`
-3. Publish to npm registry
-4. Run `npm install` in consuming project
-5. Quit Claude
-6. Restart with `-c` flag (or use `claude -r` and the conversation picker if multiple claudes are being used)
+After making changes to the source code:
+1. Run `bun run build-dist` to rebuild the distribution
+2. **Option A**: Ask user to quit Claude and restart with `-c` flag
+   - Reloads the MCP server with latest code
+   - Continues previous conversation
+
+3. **Option B (For testing)**: Run `claude -p` via Bash
+   - Can be used to quickly test changes
+   - Example: `claude -p "Check if swic mcp connector is connected and execute the hello tool"`
 
 ## Log Locations
 

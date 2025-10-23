@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "swic": {
+      "command": "bun",
+      "args": [
+        "run",
+        "dist/server/Server.js"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/paulkelcey/Dev"
+      ]
+    }
+  }
+}

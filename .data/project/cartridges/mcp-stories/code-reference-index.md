@@ -129,7 +129,7 @@ Quick lookup guide: "If you want to understand X, look at Y file"
 - `sdlc-system/cartridges/definition-of-done-story.md` - Quality gates
 
 **Shared cartridges** (sdlc-shared repository):
-- `sdlc-shared/cartridges/code-style.md` - Formatting and naming standards
+- `sdlc-shared/cartridges/coding/ts-coding-style.md` - TypeScript coding standards (formatting, naming, module patterns)
 - `sdlc-shared/cartridges/testing/` - Hierarchical testing knowledge
 - `sdlc-shared/cartridges/strategy-pattern.md` - Design pattern reference
 - `sdlc-shared/cartridges/mcp-protocol.md` - JSON-RPC 2.0 compliance
