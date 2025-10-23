@@ -53,6 +53,11 @@ while IFS= read -r script_path; do
 
 done < <(find "$SCRIPT_DIR/scripts" -type f \( -name "*.sh" -o -name "*.ts" \) | sort)
 
+# Add swic CLI command
+FISH_INIT+="function swic"$'\n'
+FISH_INIT+="    bun '$SCRIPT_DIR/src/cli/cli.ts' \$argv"$'\n'
+FISH_INIT+="end"$'\n'
+
 # Add help function
 FISH_INIT+='function help --description "List all available commands"'$'\n'
 FISH_INIT+='    echo "Available commands:"'$'\n'
@@ -85,6 +90,9 @@ while IFS= read -r script_path; do
     FISH_INIT+="    end"$'\n'
 
 done < <(find "$SCRIPT_DIR/scripts" -type f \( -name "*.sh" -o -name "*.ts" \) | sort)
+
+# Add swic CLI to help
+FISH_INIT+='    printf "  %-25s %s\n" "swic" "SWIC CLI - Stories Workflows Injected Context"'$'\n'
 
 FISH_INIT+='    echo ""'$'\n'
 FISH_INIT+='    echo "Commands should support --help and --usage flags"'$'\n'
