@@ -376,16 +376,17 @@ interface CartridgeServiceApi {
 
 /**
  * Options for creating CartridgeService instance
- * Uses dependency injection for file/folder services
+ * Uses dependency injection for file/folder services by scope
  */
 interface CartridgeServiceOptions {
-    fileService: FileServiceApi;
-    folderService: FolderServiceApi;
-    roots: {
-        projectRoot: string;
-        sharedRoot: string;
+    fileServiceByScope: {
+        project: FileServiceApi;
+        shared: FileServiceApi;
     };
-    extension: string;
+    folderServiceByScope: {
+        project: FolderServiceApi;
+        shared: FolderServiceApi;
+    };
     indexFilename: string;
 }
 
@@ -416,23 +417,32 @@ const fail = (code: string, message: string, data?: unknown): never => {
  * @throws {FsError} VALIDATION_ERROR if options are invalid
  */
 const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
-    const { fileService, folderService, roots, extension, indexFilename } = options;
-    const { projectRoot, sharedRoot } = roots;
-
-    if (!extension.startsWith('.')) {
-        fail('VALIDATION_ERROR', 'extension must start with a dot, e.g. ".md"', { extension });
-    }
+    const { fileServiceByScope, folderServiceByScope, indexFilename } = options;
 
     /**
-     * Get root path for a scope
+     * Get file service for a scope
      * @internal
      */
-    const scopeToRoot = (scope: Scope): string => {
+    const getFileService = (scope: Scope): FileServiceApi => {
         if (scope === 'project') {
-            return projectRoot;
+            return fileServiceByScope.project;
         }
         if (scope === 'shared') {
-            return sharedRoot;
+            return fileServiceByScope.shared;
+        }
+        return fail('INVALID_SCOPE', `Unknown scope '${scope}'`, { scope });
+    };
+
+    /**
+     * Get folder service for a scope
+     * @internal
+     */
+    const getFolderService = (scope: Scope): FolderServiceApi => {
+        if (scope === 'project') {
+            return folderServiceByScope.project;
+        }
+        if (scope === 'shared') {
+            return folderServiceByScope.shared;
         }
         return fail('INVALID_SCOPE', `Unknown scope '${scope}'`, { scope });
     };
@@ -442,8 +452,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
      * @internal
      */
     const getIndexPath = (scope: Scope): string => {
-        const root = scopeToRoot(scope);
-        return `${root}/${indexFilename}`;
+        return indexFilename;
     };
 
     /**
@@ -453,6 +462,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
      */
     const readIndex = async (scope: Scope): Promise<{ index: IndexData; hash: string }> => {
         const indexPath = getIndexPath(scope);
+        const fileService = getFileService(scope);
 
         try {
             const { content, hash } = await fileService.readText(indexPath);
@@ -479,6 +489,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         baseHash: string
     ): Promise<{ hash: string }> => {
         const indexPath = getIndexPath(scope);
+        const fileService = getFileService(scope);
         const content = JSON.stringify(index, null, 2);
 
         try {
@@ -667,7 +678,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
      */
     const resolveAddress = async (addr: CartridgeAddress): Promise<{ rel: string; abs: string }> => {
         const { scope } = addr;
-        const root = scopeToRoot(scope);
+        const folderService = getFolderService(scope);
 
         let cartridgePath: string;
 
@@ -693,11 +704,8 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             cartridgePath = index[id];
         }
 
-        // Construct full path with extension
-        const relativePath = `${root}/${cartridgePath}${extension}`;
-
-        // Resolve using folder service
-        const resolved = await folderService.resolve(relativePath);
+        // Resolve using folder service (no extension, no root prefix)
+        const resolved = await folderService.resolve(cartridgePath);
 
         return resolved;
     };
@@ -744,21 +752,23 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         const normalized = normalizePathAddress(address);
         const { scope, path } = normalized;
 
+        const fileService = getFileService(scope);
+        const folderService = getFolderService(scope);
+
         const id = await generateNextId(scope);
 
-        const root = scopeToRoot(scope);
-        const relativePath = `${root}/${path}${extension}`;
-
-        const exists = await fileService.exists(relativePath);
+        const exists = await fileService.exists(path);
         if (exists) {
             fail('CARTRIDGE_ALREADY_EXISTS', `Cartridge already exists at path '${path}'`, { path, scope });
         }
 
-        const parentPath = `${root}/${dirname(path)}`;
-        await folderService.ensureDir(parentPath);
+        const parentPath = dirname(path);
+        if (parentPath !== '.') {
+            await folderService.ensureDir(parentPath);
+        }
 
         const { newHash } = await fileService.writeTextAtomicIfUnchanged(
-            relativePath,
+            path,
             '',
             content
         );
@@ -783,6 +793,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         const { rel: relativePath } = await resolveAddress(addr);
 
         // Read file content
+        const fileService = getFileService(addr.scope);
         const { content, hash } = await fileService.readText(relativePath);
 
         // Parse front matter
@@ -844,6 +855,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         const { rel: relativePath } = await resolveAddress(addr as CartridgeAddress);
 
         // Read current content
+        const fileService = getFileService((addr as CartridgeAddress).scope);
         const { content: currentContent, hash: currentHash } = await fileService.readText(relativePath);
 
         if (currentHash !== baseHash) {
@@ -909,6 +921,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
         const { rel: relativePath } = await resolveAddress(addr as CartridgeAddress);
 
+        const fileService = getFileService((addr as CartridgeAddress).scope);
         let deleted = false;
         try {
             const result = await fileService.deleteIfUnchanged(relativePath, expectedHash);
@@ -944,21 +957,19 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             fail('INVALID_SCOPE', `Scope must be 'project' or 'shared', got '${scope}'`, { scope });
         }
 
+        const fileService = getFileService(scope);
         const { index } = await readIndex(scope);
         const items: CartridgeListItem[] = [];
-        const root = scopeToRoot(scope);
 
         for (const [id, path] of Object.entries(index)) {
             if (pathPrefix && !path.startsWith(pathPrefix)) {
                 continue;
             }
 
-            const relativePath = `${root}/${path}${extension}`;
-
             try {
                 if (includeContent) {
-                    const { content, hash } = await fileService.readText(relativePath);
-                    const stats = await fileService.stat(relativePath);
+                    const { content, hash } = await fileService.readText(path);
+                    const stats = await fileService.stat(path);
                     const { frontMatter } = parseFrontMatter(content);
 
                     items.push({
@@ -971,7 +982,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
                     });
                 }
                 else {
-                    const stats = await fileService.stat(relativePath);
+                    const stats = await fileService.stat(path);
 
                     items.push({
                         scope,
@@ -1037,16 +1048,16 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
  *
  * ## Storage Structure
  *
- * Cartridges are stored as markdown files organized by scope:
+ * Cartridges are stored as files organized by scope (extensions optional):
  * ```
  * project/cartridges/
- *   .index.json              # Maps IDs to paths: { "crt001": "auth/jwt" }
- *   auth/jwt-setup.md        # Cartridge content
- *   testing/patterns.md      # Cartridge content
+ *   .index.json              # Maps IDs to paths: { "crt001": "auth/jwt-setup" }
+ *   auth/jwt-setup           # Cartridge content (extension optional)
+ *   testing/patterns.md      # Extension allowed but not required
  *
  * shared/cartridges/
  *   .index.json              # Shared scope index
- *   workflows/tdd.md         # Shared cartridge
+ *   workflows/tdd            # Cartridge content (extension optional)
  * ```
  *
  * ## Addressing Methods
