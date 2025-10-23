@@ -205,71 +205,6 @@ interface IndexData {
  */
 interface CartridgeServiceApi {
     /**
-     * Validate cartridge ID format
-     *
-     * Checks if ID matches pattern: crt{num} where num is zero-padded to 3 digits
-     * Examples: crt001, crt002, crt123
-     *
-     * @param id - Cartridge identifier to validate
-     * @returns True if ID format is valid
-     */
-    validateId(id: string): boolean;
-
-    /**
-     * Validate and normalize cartridge path
-     *
-     * Validates:
-     * - POSIX-style separators (forward slashes)
-     * - No file extension
-     * - No absolute paths or .. segments
-     * - Valid characters for filesystem
-     *
-     * @param path - Path to validate and normalize
-     * @returns Validation result with normalized path or error reason
-     */
-    validatePath(path: CartridgePath): PathValidationResult;
-
-    /**
-     * Normalize path-based address (no I/O)
-     *
-     * Validates and normalizes the path component
-     * Ensures scope is valid
-     * Strips version (for write operations)
-     *
-     * @param addr - Path-based address to normalize
-     * @returns Normalized address with validated components
-     * @throws {FsError} INVALID_SCOPE if scope is not 'project' or 'shared'
-     * @throws {FsError} INVALID_PATH_FORMAT if path format is invalid
-     */
-    normalizePathAddress(addr: AddressPath): NormalizedAddressPath;
-
-    /**
-     * Resolve address to filesystem paths (with I/O)
-     *
-     * Converts logical address to absolute and relative filesystem paths
-     * Handles both ID-based and path-based addressing
-     * For ID-based: reads index to find canonical path
-     *
-     * @param addr - Cartridge address (path or ID based)
-     * @returns Object with relative and absolute paths within boundary
-     * @throws {FsError} CARTRIDGE_NOT_FOUND if ID not found in index
-     * @throws {FsError} BOUNDARY_VIOLATION if resolved path escapes boundary
-     */
-    resolveAddress(addr: CartridgeAddress): Promise<{ rel: string; abs: string }>;
-
-    /**
-     * Generate next available ID for a scope
-     *
-     * Scans existing index to find highest ID and increments
-     * Format: crt{num} where num is zero-padded to 3 digits
-     *
-     * @param scope - Scope to generate ID for
-     * @returns Next available cartridge ID (e.g., "crt001", "crt042")
-     * @throws {FsError} INVALID_SCOPE if scope is invalid
-     */
-    generateNextId(scope: Scope): Promise<CartridgeId>;
-
-    /**
      * Create new cartridge
      *
      * Uses Method 1 (path-based) addressing
@@ -978,11 +913,6 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
     };
 
     return Object.freeze({
-        validateId,
-        validatePath,
-        normalizePathAddress,
-        resolveAddress,
-        generateNextId,
         create: createCartridge,
         read: readCartridge,
         editLatest,
