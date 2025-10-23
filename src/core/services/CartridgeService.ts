@@ -434,7 +434,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         if (scope === 'shared') {
             return sharedRoot;
         }
-        fail('INVALID_SCOPE', `Unknown scope '${scope}'`, { scope });
+        return fail('INVALID_SCOPE', `Unknown scope '${scope}'`, { scope });
     };
 
     /**
@@ -599,7 +599,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
             default: {
                 const _exhaustive: never = edit;
-                fail('VALIDATION_ERROR', `Unknown edit operation: ${JSON.stringify(_exhaustive)}`);
+                return fail('VALIDATION_ERROR', `Unknown edit operation: ${JSON.stringify(_exhaustive)}`);
             }
         }
     };
@@ -800,20 +800,24 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             const { index } = await readIndex(addr.scope);
             const foundId = Object.keys(index).find(id => index[id] === canonicalPath);
             if (!foundId) {
-                fail('CARTRIDGE_NOT_FOUND', `Cartridge exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope: addr.scope });
+                return fail('CARTRIDGE_NOT_FOUND', `Cartridge exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope: addr.scope });
             }
             canonicalId = foundId;
         }
-        else {
+        else if (addr.kind === 'id') {
             canonicalId = addr.id;
 
             // Lookup path from index
             const { index } = await readIndex(addr.scope);
             const foundPath = index[canonicalId];
             if (!foundPath) {
-                fail('CARTRIDGE_NOT_FOUND', `No cartridge with ID '${canonicalId}'`, { id: canonicalId, scope: addr.scope });
+                return fail('CARTRIDGE_NOT_FOUND', `No cartridge with ID '${canonicalId}'`, { id: canonicalId, scope: addr.scope });
             }
             canonicalPath = foundPath;
+        }
+        else {
+            const _exhaustive: never = addr;
+            return fail('VALIDATION_ERROR', `Unknown address kind: ${JSON.stringify(_exhaustive)}`);
         }
 
         return {
@@ -881,20 +885,27 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         addr: Omit<CartridgeAddress, 'version'>,
         expectedHash: string
     ): Promise<DeleteCartridgeResult> => {
-        let cartridgeId: string;
-
-        if (addr.kind === 'id') {
-            cartridgeId = addr.id;
-        }
-        else {
-            const normalized = normalizePathAddress(addr as AddressPath);
-            const { index } = await readIndex(addr.scope);
-            const foundId = Object.keys(index).find(id => index[id] === normalized.path);
-            if (!foundId) {
-                fail('CARTRIDGE_NOT_FOUND', `Cartridge not in index: '${normalized.path}'`, { path: normalized.path, scope: addr.scope });
+        // Resolve cartridge ID from address
+        // Note: TypeScript doesn't properly narrow Omit<discriminated union>, so we use type assertions
+        const cartridgeId = await (async (): Promise<string> => {
+            if (addr.kind === 'id') {
+                return (addr as Omit<AddressId, 'version'>).id;
             }
-            cartridgeId = foundId;
-        }
+            else if (addr.kind === 'path') {
+                const pathAddr = addr as Omit<AddressPath, 'version'>;
+                const normalized = normalizePathAddress(pathAddr as AddressPath);
+                const { index } = await readIndex(pathAddr.scope);
+                const foundId = Object.keys(index).find(id => index[id] === normalized.path);
+                if (!foundId) {
+                    return fail('CARTRIDGE_NOT_FOUND', `Cartridge not in index: '${normalized.path}'`, { path: normalized.path, scope: pathAddr.scope });
+                }
+                return foundId;
+            }
+            else {
+                const _exhaustive: never = addr as never;
+                return fail('VALIDATION_ERROR', `Unknown address kind: ${JSON.stringify(_exhaustive)}`);
+            }
+        })();
 
         const { rel: relativePath } = await resolveAddress(addr as CartridgeAddress);
 
