@@ -172,17 +172,6 @@ interface ListCartridgesParams {
 }
 
 /**
- * Result of batch read operation
- */
-interface MultiReadResult {
-    results: ReadCartridgeResult[];
-    errors: Array<{
-        address: CartridgeAddress;
-        error: FsError;
-    }>;
-}
-
-/**
  * Path validation result
  */
 interface PathValidationResult {
@@ -360,18 +349,6 @@ interface CartridgeServiceApi {
      * @throws {FsError} INVALID_SCOPE if scope is invalid
      */
     list(params: ListCartridgesParams): Promise<CartridgeListItem[]>;
-
-    /**
-     * Batch read multiple cartridges (AI workflow helper)
-     *
-     * Reads multiple cartridges in a single operation
-     * Supports partial success (some reads may fail)
-     * Useful for loading multiple cartridges into agent context
-     *
-     * @param addresses - Array of cartridge addresses to read
-     * @returns Results and errors separately for partial success handling
-     */
-    multiread(addresses: CartridgeAddress[]): Promise<MultiReadResult>;
 }
 
 /**
@@ -1000,27 +977,6 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         return items;
     };
 
-    /**
-     * Batch read multiple cartridges
-     * @internal
-     */
-    const multiread = async (addresses: CartridgeAddress[]): Promise<MultiReadResult> => {
-        const results: ReadCartridgeResult[] = [];
-        const errors: Array<{ address: CartridgeAddress; error: FsError }> = [];
-
-        for (const address of addresses) {
-            try {
-                const result = await readCartridge(address);
-                results.push(result);
-            }
-            catch (error: any) {
-                errors.push({ address, error: error as FsError });
-            }
-        }
-
-        return { results, errors };
-    };
-
     return Object.freeze({
         validateId,
         validatePath,
@@ -1031,8 +987,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         read: readCartridge,
         editLatest,
         deleteLatest,
-        list: listCartridges,
-        multiread
+        list: listCartridges
     });
 };
 
@@ -1118,7 +1073,6 @@ export type {
     DeleteCartridgeResult,
     CartridgeListItem,
     ListCartridgesParams,
-    MultiReadResult,
     PathValidationResult,
     CartridgeErrorCode,
     FsError,
