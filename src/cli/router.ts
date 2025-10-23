@@ -4,7 +4,7 @@ import CreateCartridge from './commands/cartridge/create.js';
 
 const create = (services: CoreServices): Command => {
     const program = new Command('swic')
-        .description('SWIC - Story Workflow Integration Controller')
+        .description('SWIC - Stories Workflows Injected Context')
         .version('0.1.0');
 
     const cartridge = new Command('cartridge')
