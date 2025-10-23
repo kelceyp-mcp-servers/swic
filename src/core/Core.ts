@@ -29,7 +29,7 @@ const INDEX_FILENAME = '.index.json';
 const createServices = (options: CoreOptions): Readonly<CoreServices> => {
     const { projectBoundaryDir, sharedBoundaryDir } = options;
 
-    // Construct cartridge-specific boundaries
+    // Construct cartridge-specific boundaries within each root
     const projectCartridgeBoundary = `${projectBoundaryDir}/${CARTRIDGE_SUBDIR}`;
     const sharedCartridgeBoundary = `${sharedBoundaryDir}/${CARTRIDGE_SUBDIR}`;
 
@@ -67,26 +67,8 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
     });
 };
 
-/**
- * Get default boundary directories based on conventions
- *
- * @returns Object with projectBoundaryDir and sharedBoundaryDir
- */
-const getDefaultBoundaries = (): CoreOptions => {
-    const projectBoundary = process.env.SWIC_PROJECT_BOUNDARY
-        || resolve(process.cwd(), '.swic/project');
-    const sharedBoundary = process.env.SWIC_SHARED_BOUNDARY
-        || resolve(homedir(), '.swic/shared');
-
-    return {
-        projectBoundaryDir: projectBoundary,
-        sharedBoundaryDir: sharedBoundary
-    };
-};
-
 const Core = Object.freeze({
-    createServices,
-    getDefaultBoundaries
+    createServices
 });
 
 export default Core;
