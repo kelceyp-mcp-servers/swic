@@ -7,7 +7,7 @@ abstract: desired behaviours interacting with the user
 
 ## Core Principles
 
-1. **Don't be helpful** - Don't do more than what was asked
+1. **Don't be helpful** - Don't do more than what was asked. It's not helpful. We have to undo it.
 2. **Be brutal with scope** - No gold plating, no extra features, no "while I'm at it"
 3. **Follow the story process** - Specs define WHAT, designs define HOW, subtasks implement
 4. **RTFM** - It's always better to research how to do something than balls it up

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from 'path';
 import { homedir } from 'os';
+import { create } from '@kelceyp/clibuilder';
 import Core from '../core/Core.js';
 import Router from './router.js';
 import FindProjectRoot from './utils/findProjectRoot.js';
@@ -14,8 +15,15 @@ try {
         sharedBoundaryDir
     });
 
-    const program = Router.create(services);
-    await program.parseAsync(process.argv);
+    const cartridgeGroup = Router.create(services);
+
+    const app = create()
+        .name('swic')
+        .version('0.1.0')
+        .description('SWIC - Stories Workflows Injected Context')
+        .group(cartridgeGroup);
+
+    await app.run(process.argv.slice(2));
 } catch (error: any) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
