@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { resolve } from 'path';
 import { homedir } from 'os';
 import { create } from '@kelceyp/clibuilder';
