@@ -57,9 +57,9 @@ const create = (services: CoreServices) => {
             const cartridgeId = cartridge.id;
 
             const result = await services.cartridgeService.deleteLatest(
-                resolved.kind === 'id'
+                (resolved.kind === 'id'
                     ? { kind: 'id', scope: scope as 'project' | 'shared', id: resolved.value }
-                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value },
+                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value }) as any,
                 expectedHash
             );
 

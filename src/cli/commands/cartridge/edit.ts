@@ -140,9 +140,9 @@ const create = (services: CoreServices) => {
 
             // Apply edits
             const result = await services.cartridgeService.editLatest(
-                resolved.kind === 'id'
+                (resolved.kind === 'id'
                     ? { kind: 'id', scope: scope as 'project' | 'shared', id: resolved.value }
-                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value },
+                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value }) as any,
                 baseHash,
                 edits
             );
