@@ -6,6 +6,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import debug from 'debug';
 import packageJson from '../../package.json';
+import type { CoreServices } from '../core/Core.js';
+import CartridgeCreateTool from './tools/cartridge/create.js';
 
 /**
  * Server API interface
@@ -16,23 +18,36 @@ interface ServerApi {
 }
 
 /**
+ * Server options
+ */
+interface ServerOptions {
+    services: CoreServices;
+}
+
+/**
  * Create a Server instance
  *
  * Creates an MCP (Model Context Protocol) server that exposes tools
  * to AI assistants. The server name and version are read from package.json.
  *
+ * @param options - Server configuration including core services
  * @returns Server API with start method
  * @example
  * ```typescript
- * const server = Server.create();
+ * const services = Core.createServices({...});
+ * const server = Server.create({ services });
  * await server.start();
  * ```
  */
-const create = (): ServerApi => {
+const create = (options: ServerOptions): ServerApi => {
+    const { services } = options;
     const name = packageJson.name;
     const version = packageJson.version;
 
     const mcpServer = new MCPServer({name, version}, {capabilities: {tools: {}}});
+
+    // Initialize tools
+    const cartridgeCreateTool = CartridgeCreateTool.create(services);
 
     /**
      * Register available tools with the MCP server
@@ -42,19 +57,7 @@ const create = (): ServerApi => {
         mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
             return {
                 tools: [
-                    {
-                        name: 'hello',
-                        description: 'Say hello with an optional name',
-                        inputSchema: {
-                            type: 'object',
-                            properties: {
-                                name: {
-                                    type: 'string',
-                                    description: 'Name to greet (optional)'
-                                }
-                            }
-                        }
-                    }
+                    cartridgeCreateTool.definition
                 ]
             };
         });
@@ -69,20 +72,8 @@ const create = (): ServerApi => {
             const { name: toolName, arguments: args } = request.params;
 
             switch (toolName) {
-                case 'hello': {
-                    const greeting = args?.name
-                        ? `Hello, ${args.name}!`
-                        : 'Hello, world!';
-
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: greeting
-                            }
-                        ]
-                    };
-                }
+                case 'cartridge_create':
+                    return await cartridgeCreateTool.handler(args, services);
 
                 default:
                     throw new Error(`Unknown tool: ${toolName}`);
@@ -116,7 +107,20 @@ const create = (): ServerApi => {
  * @internal
  */
 const main = async (): Promise<void> => {
-    const server = create();
+    const { default: Core } = await import('../core/Core.js');
+    const { default: FindProjectRoot } = await import('../core/utils/findProjectRoot.js');
+    const { resolve } = await import('path');
+    const { homedir } = await import('os');
+
+    const projectBoundaryDir = FindProjectRoot.findProjectRoot();
+    const sharedBoundaryDir = resolve(homedir(), '.swic');
+
+    const services = Core.createServices({
+        projectBoundaryDir,
+        sharedBoundaryDir
+    });
+
+    const server = create({ services });
     await server.start();
 };
 
@@ -138,4 +142,4 @@ if (import.meta.main) {
 }
 
 export default Server;
-export type { ServerApi };
+export type { ServerApi, ServerOptions };

@@ -1,5 +1,6 @@
 import type { FileServiceApi } from './FileService.js';
 import type { FolderServiceApi } from './FolderService.js';
+import AddressResolver from '../utils/AddressResolver.js';
 import { dirname } from 'path';
 
 /**
@@ -305,6 +306,12 @@ interface CartridgeServiceOptions {
 const ID_PATTERN = /^crt\d{3,}$/;
 const FRONT_MATTER_DELIMITER = '---';
 
+// Address resolver for cartridge identifiers
+const addressResolver = AddressResolver.create({
+    idPattern: ID_PATTERN,
+    entityName: 'cartridge'
+});
+
 /**
  * Throw structured error with code
  * @internal
@@ -532,7 +539,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
      * @internal
      */
     const validateId = (id: string): boolean => {
-        return ID_PATTERN.test(id);
+        return addressResolver.validateId(id);
     };
 
     /**
@@ -663,6 +670,11 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
         const normalized = normalizePathAddress(address);
         const { scope, path } = normalized;
+
+        // Prevent creating cartridges with ID-like paths
+        if (addressResolver.isId(path)) {
+            fail('INVALID_PATH_FORMAT', `Cannot create cartridge with path '${path}' - matches ID pattern`, { path, scope });
+        }
 
         const fileService = getFileService(scope);
         const folderService = getFolderService(scope);

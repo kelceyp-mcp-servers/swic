@@ -58,6 +58,22 @@ FISH_INIT+="function swic"$'\n'
 FISH_INIT+="    bun '$SCRIPT_DIR/src/cli/cli.ts' \$argv"$'\n'
 FISH_INIT+="end"$'\n'
 
+# Auto-discover and add CLI group wrapper functions
+while IFS= read -r line; do
+    # Extract group name (first word before spaces)
+    group_name=$(echo "$line" | awk '{print $1}')
+
+    # Skip if empty or if it's a flag line
+    if [[ -z "$group_name" ]] || [[ "$group_name" == --* ]]; then
+        continue
+    fi
+
+    # Add function for this group
+    FISH_INIT+="function $group_name"$'\n'
+    FISH_INIT+="    bun '$SCRIPT_DIR/src/cli/cli.ts' $group_name \$argv"$'\n'
+    FISH_INIT+="end"$'\n'
+done < <(bun "$SCRIPT_DIR/src/cli/cli.ts" --help 2>&1 | sed -n '/^COMMANDS:/,/^[A-Z]/p' | grep -E '^\s+[a-z]' | sed 's/^  //')
+
 # Add help function
 FISH_INIT+='function help --description "List all available commands"'$'\n'
 FISH_INIT+='    echo "Available commands:"'$'\n'
@@ -91,8 +107,21 @@ while IFS= read -r script_path; do
 
 done < <(find "$SCRIPT_DIR/scripts" -type f \( -name "*.sh" -o -name "*.ts" \) | sort)
 
-# Add swic CLI to help
-FISH_INIT+='    printf "  %-25s %s\n" "swic" "SWIC CLI - Stories Workflows Injected Context"'$'\n'
+# Add CLI groups to help
+while IFS= read -r line; do
+    # Extract group name and description
+    group_name=$(echo "$line" | awk '{print $1}')
+    # Get everything after the first word and trim leading whitespace
+    group_desc=$(echo "$line" | sed 's/^[^ ]* *//')
+
+    # Skip if empty or if it's a flag line
+    if [[ -z "$group_name" ]] || [[ "$group_name" == --* ]]; then
+        continue
+    fi
+
+    # Add to help output
+    FISH_INIT+="    printf \"  %-25s %s\\n\" \"$group_name\" \"$group_desc\""$'\n'
+done < <(bun "$SCRIPT_DIR/src/cli/cli.ts" --help 2>&1 | sed -n '/^COMMANDS:/,/^[A-Z]/p' | grep -E '^\s+[a-z]' | sed 's/^  //')
 
 FISH_INIT+='    echo ""'$'\n'
 FISH_INIT+='    echo "Commands should support --help and --usage flags"'$'\n'
