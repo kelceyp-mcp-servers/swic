@@ -1,6 +1,7 @@
 import type { FileServiceApi } from './FileService.js';
 import type { FolderServiceApi } from './FolderService.js';
-import AddressResolver from '../utils/AddressResolver.js';
+import CartridgeAddressResolver from '../utils/CartridgeAddressResolver.js';
+import { detectScopeFromId } from '../utils/CartridgeAddressResolver.js';
 import { dirname } from 'path';
 
 /**
@@ -29,10 +30,15 @@ interface FsError extends Error {
 type Scope = 'project' | 'shared';
 
 /**
- * Cartridge unique identifier format: crt{num}
- * Examples: crt001, crt002, crt123
+ * Cartridge unique identifier formats:
+ * - Project cartridges: crt{num} (e.g., crt001, crt002, crt123)
+ * - Shared cartridges: scrt{num} (e.g., scrt001, scrt002, scrt123)
+ *
+ * The prefix disambiguates scope, eliminating ID collisions between scopes.
  */
-type CartridgeId = string;
+type ProjectCartridgeId = `crt${string}`;
+type SharedCartridgeId = `scrt${string}`;
+type CartridgeId = ProjectCartridgeId | SharedCartridgeId;
 
 /**
  * POSIX-style path within scope, no extension
@@ -43,9 +49,13 @@ type CartridgePath = string;
 /**
  * Path-based addressing (Method 1)
  * Specifies location within scope using filesystem-like path
+ *
+ * Scope is optional:
+ * - If provided: use specified scope
+ * - If omitted: check project scope first, then shared scope
  */
 interface AddressPath {
-    scope: Scope;
+    scope?: Scope;
     path: CartridgePath;
     version?: string;
 }
@@ -62,9 +72,13 @@ interface NormalizedAddressPath {
 /**
  * ID-based addressing (Method 2)
  * Specifies cartridge by unique identifier
+ *
+ * Scope is optional:
+ * - If provided: use specified scope
+ * - If omitted: infer from ID prefix (crt### = project, scrt### = shared)
  */
 interface AddressId {
-    scope: Scope;
+    scope?: Scope;
     id: CartridgeId;
     version?: string;
 }
@@ -108,9 +122,13 @@ type EditOp =
 /**
  * Input for creating a new cartridge
  * Uses Method 1 (path-based) addressing only
+ *
+ * Scope is optional:
+ * - If provided: create in specified scope
+ * - If omitted: defaults to 'project' scope
  */
 interface CreateCartridgeInput {
-    address: { kind: 'path' } & Required<Omit<AddressPath, 'version'>>;
+    address: { kind: 'path' } & Omit<AddressPath, 'version'>;
     content: string;
 }
 
@@ -161,13 +179,24 @@ interface CartridgeListItem {
     synopsis?: string;
     hash?: string;
     modifiedAt?: Date;
+    /**
+     * Override status when same path exists in both scopes:
+     * - 'overrides': Project cartridge that shadows a shared cartridge
+     * - 'overridden': Shared cartridge that is shadowed by a project cartridge
+     * - undefined: No conflict, or single-scope listing
+     */
+    override?: 'overrides' | 'overridden';
 }
 
 /**
  * Parameters for listing cartridges
+ *
+ * Scope is optional:
+ * - If provided: list only cartridges in that scope
+ * - If omitted: list cartridges from both scopes with override detection
  */
 interface ListCartridgesParams {
-    scope: Scope;
+    scope?: Scope;
     pathPrefix?: string;
     includeContent?: boolean;
 }
@@ -303,14 +332,7 @@ interface CartridgeServiceOptions {
     indexFilename: string;
 }
 
-const ID_PATTERN = /^crt\d{3,}$/;
 const FRONT_MATTER_DELIMITER = '---';
-
-// Address resolver for cartridge identifiers
-const addressResolver = AddressResolver.create({
-    idPattern: ID_PATTERN,
-    entityName: 'cartridge'
-});
 
 /**
  * Throw structured error with code
@@ -364,6 +386,66 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             return folderServiceByScope.shared;
         }
         return fail('INVALID_SCOPE', `Unknown scope '${scope}'`, { scope });
+    };
+
+    /**
+     * Resolve scope for an address
+     *
+     * Handles optional scope resolution:
+     * - If scope provided explicitly: use it
+     * - For ID-based: detect from prefix (crt### = project, scrt### = shared)
+     * - For path-based: try project first, then shared
+     *
+     * @internal
+     */
+    const resolveScopeForAddress = async (addr: CartridgeAddress): Promise<{ scope: Scope; fallback?: boolean }> => {
+        // Explicit scope provided
+        if (addr.scope) {
+            return { scope: addr.scope };
+        }
+
+        // ID-based: detect from prefix
+        if (addr.kind === 'id') {
+            const detectedScope = detectScopeFromId(addr.id);
+            if (!detectedScope) {
+                fail('INVALID_ID_FORMAT', `Invalid cartridge ID format: '${addr.id}'. Expected crtNNN or scrtNNN`, { id: addr.id });
+            }
+            return { scope: detectedScope };
+        }
+
+        // Path-based: try project first, then shared
+        if (addr.kind === 'path') {
+            // Check if exists in project scope
+            try {
+                const projectIndex = await readIndex('project');
+                // Look for cartridge by path in project index
+                const projectEntry = Object.entries(projectIndex.index).find(([_, p]) => p === addr.path);
+                if (projectEntry) {
+                    return { scope: 'project' };
+                }
+            } catch (e) {
+                // Project index doesn't exist or error reading - fall through to shared
+            }
+
+            // Check if exists in shared scope
+            try {
+                const sharedIndex = await readIndex('shared');
+                const sharedEntry = Object.entries(sharedIndex.index).find(([_, p]) => p === addr.path);
+                if (sharedEntry) {
+                    return { scope: 'shared', fallback: true };
+                }
+            } catch (e) {
+                // Shared index doesn't exist or error reading
+            }
+
+            // Not found in either scope - default to project for create operations
+            // For read/edit/delete operations, this will fail with NOT_FOUND later
+            return { scope: 'project' };
+        }
+
+        // Should never reach here due to discriminated union
+        const _exhaustive: never = addr;
+        return fail('VALIDATION_ERROR', `Unknown address kind: ${JSON.stringify(_exhaustive)}`);
     };
 
     /**
@@ -536,10 +618,11 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Validate cartridge ID format
+     * Accepts both project (crt###) and shared (scrt###) formats
      * @internal
      */
     const validateId = (id: string): boolean => {
-        return addressResolver.validateId(id);
+        return CartridgeAddressResolver.isCartridgeId(id);
     };
 
     /**
@@ -571,9 +654,10 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Normalize path-based address
+     * Note: This assumes scope is already resolved and present
      * @internal
      */
-    const normalizePathAddress = (addr: AddressPath): NormalizedAddressPath => {
+    const normalizePathAddress = (addr: AddressPath & { scope: Scope }): NormalizedAddressPath => {
         const { scope, path } = addr;
 
         if (scope !== 'project' && scope !== 'shared') {
@@ -593,17 +677,19 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Resolve address to filesystem paths
+     * Handles optional scope resolution
      * @internal
      */
-    const resolveAddress = async (addr: CartridgeAddress): Promise<{ rel: string; abs: string }> => {
-        const { scope } = addr;
+    const resolveAddress = async (addr: CartridgeAddress): Promise<{ rel: string; abs: string; scope: Scope }> => {
+        // Resolve scope (handles optional scope)
+        const { scope } = await resolveScopeForAddress(addr);
         const folderService = getFolderService(scope);
 
         let cartridgePath: string;
 
         if (addr.kind === 'path') {
             // Path-based addressing: use path directly
-            const normalized = normalizePathAddress(addr);
+            const normalized = normalizePathAddress({ ...addr, scope });
             cartridgePath = normalized.path;
         }
         else {
@@ -611,7 +697,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             const { id } = addr;
 
             if (!validateId(id)) {
-                fail('INVALID_ID_FORMAT', `ID must match pattern crt\\d{3,}, got '${id}'`, { id });
+                fail('INVALID_ID_FORMAT', `ID must match pattern crt\\d{3,} or scrt\\d{3,}, got '${id}'`, { id });
             }
 
             const { index } = await readIndex(scope);
@@ -626,11 +712,12 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         // Resolve using folder service (no extension, no root prefix)
         const resolved = await folderService.resolve(cartridgePath);
 
-        return resolved;
+        return { ...resolved, scope };
     };
 
     /**
      * Generate next available ID for a scope
+     * Uses scope-specific prefixes: crt### for project, scrt### for shared
      * @internal
      */
     const generateNextId = async (scope: Scope): Promise<CartridgeId> => {
@@ -640,9 +727,13 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
         const { index } = await readIndex(scope);
 
+        // Determine prefix based on scope
+        const prefix = scope === 'project' ? 'crt' : 'scrt';
+        const pattern = new RegExp(`^${prefix}(\\d{3,})$`);
+
         let maxNum = 0;
         for (const id of Object.keys(index)) {
-            const match = id.match(/^crt(\d{3,})$/);
+            const match = id.match(pattern);
             if (match) {
                 const num = parseInt(match[1], 10);
                 if (num > maxNum) {
@@ -652,13 +743,14 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         }
 
         const nextNum = maxNum + 1;
-        const nextId = `crt${nextNum.toString().padStart(3, '0')}`;
+        const nextId = `${prefix}${nextNum.toString().padStart(3, '0')}` as CartridgeId;
 
         return nextId;
     };
 
     /**
      * Create new cartridge
+     * Scope defaults to 'project' if not provided
      * @internal
      */
     const createCartridge = async (input: CreateCartridgeInput): Promise<CreateCartridgeResult> => {
@@ -668,11 +760,13 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             fail('VALIDATION_ERROR', 'Create requires path-based addressing');
         }
 
-        const normalized = normalizePathAddress(address);
-        const { scope, path } = normalized;
+        // Default to project scope if not specified
+        const scope = address.scope ?? 'project';
+        const normalized = normalizePathAddress({ ...address, scope });
+        const { path } = normalized;
 
         // Prevent creating cartridges with ID-like paths
-        if (addressResolver.isId(path)) {
+        if (CartridgeAddressResolver.isCartridgeId(path)) {
             fail('INVALID_PATH_FORMAT', `Cannot create cartridge with path '${path}' - matches ID pattern`, { path, scope });
         }
 
@@ -710,14 +804,15 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Read cartridge content
+     * Handles optional scope resolution
      * @internal
      */
     const readCartridge = async (addr: CartridgeAddress): Promise<ReadCartridgeResult> => {
-        // Resolve address to file path
-        const { rel: relativePath } = await resolveAddress(addr);
+        // Resolve address to file path and scope
+        const { rel: relativePath, scope } = await resolveAddress(addr);
 
         // Read file content
-        const fileService = getFileService(addr.scope);
+        const fileService = getFileService(scope);
         const { content, hash } = await fileService.readText(relativePath);
 
         // Parse front matter
@@ -728,14 +823,14 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         let canonicalId: string;
 
         if (addr.kind === 'path') {
-            const normalized = normalizePathAddress(addr);
+            const normalized = normalizePathAddress({ ...addr, scope });
             canonicalPath = normalized.path;
 
             // Lookup ID from index
-            const { index } = await readIndex(addr.scope);
+            const { index } = await readIndex(scope);
             const foundId = Object.keys(index).find(id => index[id] === canonicalPath);
             if (!foundId) {
-                return fail('CARTRIDGE_NOT_FOUND', `Cartridge exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope: addr.scope });
+                return fail('CARTRIDGE_NOT_FOUND', `Cartridge exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope });
             }
             canonicalId = foundId;
         }
@@ -743,10 +838,10 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             canonicalId = addr.id;
 
             // Lookup path from index
-            const { index } = await readIndex(addr.scope);
+            const { index } = await readIndex(scope);
             const foundPath = index[canonicalId];
             if (!foundPath) {
-                return fail('CARTRIDGE_NOT_FOUND', `No cartridge with ID '${canonicalId}'`, { id: canonicalId, scope: addr.scope });
+                return fail('CARTRIDGE_NOT_FOUND', `No cartridge with ID '${canonicalId}'`, { id: canonicalId, scope });
             }
             canonicalPath = foundPath;
         }
@@ -768,6 +863,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Edit latest version using optimistic concurrency
+     * Handles optional scope resolution
      * @internal
      */
     const editLatest = async (
@@ -775,11 +871,11 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         baseHash: string,
         edits: EditOp[]
     ): Promise<EditCartridgeResult> => {
-        // Resolve address to file path
-        const { rel: relativePath } = await resolveAddress(addr as CartridgeAddress);
+        // Resolve address to file path and scope
+        const { rel: relativePath, scope } = await resolveAddress(addr as CartridgeAddress);
 
         // Read current content
-        const fileService = getFileService((addr as CartridgeAddress).scope);
+        const fileService = getFileService(scope);
         const { content: currentContent, hash: currentHash } = await fileService.readText(relativePath);
 
         if (currentHash !== baseHash) {
@@ -815,12 +911,16 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
     /**
      * Delete cartridge from working copy
+     * Handles optional scope resolution
      * @internal
      */
     const deleteLatest = async (
         addr: Omit<CartridgeAddress, 'version'>,
         expectedHash: string
     ): Promise<DeleteCartridgeResult> => {
+        // Resolve address to file path and scope first
+        const { rel: relativePath, scope } = await resolveAddress(addr as CartridgeAddress);
+
         // Resolve cartridge ID from address
         // Note: TypeScript doesn't properly narrow Omit<discriminated union>, so we use type assertions
         const cartridgeId = await (async (): Promise<string> => {
@@ -829,11 +929,11 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             }
             else if (addr.kind === 'path') {
                 const pathAddr = addr as Omit<AddressPath, 'version'>;
-                const normalized = normalizePathAddress(pathAddr as AddressPath);
-                const { index } = await readIndex(pathAddr.scope);
+                const normalized = normalizePathAddress({ ...pathAddr, scope } as AddressPath);
+                const { index } = await readIndex(scope);
                 const foundId = Object.keys(index).find(id => index[id] === normalized.path);
                 if (!foundId) {
-                    return fail('CARTRIDGE_NOT_FOUND', `Cartridge not in index: '${normalized.path}'`, { path: normalized.path, scope: pathAddr.scope });
+                    return fail('CARTRIDGE_NOT_FOUND', `Cartridge not in index: '${normalized.path}'`, { path: normalized.path, scope });
                 }
                 return foundId;
             }
@@ -843,9 +943,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
             }
         })();
 
-        const { rel: relativePath } = await resolveAddress(addr as CartridgeAddress);
-
-        const fileService = getFileService((addr as CartridgeAddress).scope);
+        const fileService = getFileService(scope);
         let deleted = false;
         try {
             const result = await fileService.deleteIfUnchanged(relativePath, expectedHash);
@@ -861,28 +959,84 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
         }
 
         // Always update index to remove stale entries
-        const { index, hash: indexHash } = await readIndex(addr.scope);
+        const { index, hash: indexHash } = await readIndex(scope);
         if (index[cartridgeId]) {
             delete index[cartridgeId];
-            await writeIndex(addr.scope, index, indexHash);
+            await writeIndex(scope, index, indexHash);
         }
 
         return { deleted };
     };
 
     /**
-     * List cartridges in a scope
+     * List cartridges with optional scope
+     * When scope is omitted, lists from both scopes with override detection
      * @internal
      */
     const listCartridges = async (params: ListCartridgesParams): Promise<CartridgeListItem[]> => {
         const { scope, pathPrefix, includeContent = false } = params;
 
-        if (scope !== 'project' && scope !== 'shared') {
-            fail('INVALID_SCOPE', `Scope must be 'project' or 'shared', got '${scope}'`, { scope });
+        // If scope provided, list from single scope (legacy behavior)
+        if (scope) {
+            if (scope !== 'project' && scope !== 'shared') {
+                fail('INVALID_SCOPE', `Scope must be 'project' or 'shared', got '${scope}'`, { scope });
+            }
+
+            return await listCartridgesInScope(scope, pathPrefix, includeContent);
         }
 
+        // No scope: list from both scopes with override detection
+        const projectItems = await listCartridgesInScope('project', pathPrefix, includeContent);
+        const sharedItems = await listCartridgesInScope('shared', pathPrefix, includeContent);
+
+        // Build path lookup for override detection
+        const projectPaths = new Set(projectItems.map(i => i.path));
+        const sharedPaths = new Set(sharedItems.map(i => i.path));
+
+        // Mark project items that override shared ones
+        for (const item of projectItems) {
+            if (sharedPaths.has(item.path)) {
+                item.override = 'overrides';
+            }
+        }
+
+        // Mark shared items that are overridden by project ones
+        for (const item of sharedItems) {
+            if (projectPaths.has(item.path)) {
+                item.override = 'overridden';
+            }
+        }
+
+        // Combine and sort by path (name) alphabetically
+        const combined = [...projectItems, ...sharedItems];
+        combined.sort((a, b) => a.path.localeCompare(b.path));
+
+        return combined;
+    };
+
+    /**
+     * List cartridges in a specific scope
+     * @internal
+     */
+    const listCartridgesInScope = async (
+        scope: Scope,
+        pathPrefix?: string,
+        includeContent = false
+    ): Promise<CartridgeListItem[]> => {
         const fileService = getFileService(scope);
-        const { index } = await readIndex(scope);
+        let index: IndexData;
+
+        try {
+            const result = await readIndex(scope);
+            index = result.index;
+        } catch (error: any) {
+            // If index doesn't exist, return empty list
+            if (error.code === 'NOT_FOUND' || error.code === 'ENOENT') {
+                return [];
+            }
+            throw error;
+        }
+
         const items: CartridgeListItem[] = [];
 
         for (const [id, path] of Object.entries(index)) {
@@ -898,7 +1052,7 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
                     items.push({
                         scope,
-                        id,
+                        id: id as CartridgeId,
                         path,
                         synopsis: frontMatter?.synopsis as string | undefined,
                         hash,
@@ -910,16 +1064,20 @@ const create = (options: CartridgeServiceOptions): CartridgeServiceApi => {
 
                     items.push({
                         scope,
-                        id,
+                        id: id as CartridgeId,
                         path,
                         modifiedAt: stats.mtime
                     });
                 }
             }
             catch (error: any) {
+                // Skip cartridges that can't be read
                 continue;
             }
         }
+
+        // Sort by path (name) alphabetically
+        items.sort((a, b) => a.path.localeCompare(b.path));
 
         return items;
     };

@@ -7,30 +7,24 @@ import { join } from 'path';
 
 const create = (services: CoreServices) => {
     return createCommand('create')
-        .summary('Create a new cartridge')
+        .summary('Create a new cartridge (defaults to project scope)')
         .param((p) => p
-            .name('scope')
+            .name('path')
             .type('string')
             .positional(0)
             .required()
-            .prompt({
-                message: 'Select cartridge scope',
-                type: 'select',
-                choices: ['project', 'shared']
-            })
+            .prompt('Enter cartridge path (e.g., "auth/jwt-setup.md")')
+        )
+        .param((p) => p
+            .name('scope')
+            .type('string')
+            .flag('scope', 's')
             .validate((value) => {
-                if (value !== 'project' && value !== 'shared') {
+                if (value && value !== 'project' && value !== 'shared') {
                     return 'Scope must be "project" or "shared"';
                 }
                 return true;
             })
-        )
-        .param((p) => p
-            .name('path')
-            .type('string')
-            .positional(1)
-            .required()
-            .prompt('Enter cartridge path (e.g., "auth/jwt-setup.md")')
         )
         .param((p) => p
             .name('content')
@@ -44,7 +38,7 @@ const create = (services: CoreServices) => {
             .flag('interactive', 'i')
         )
         .run(async (ctx) => {
-            const { scope, path, content, interactive } = ctx.params;
+            const { path, scope, content, interactive } = ctx.params;
 
             let finalContent: string;
 
@@ -85,13 +79,19 @@ const create = (services: CoreServices) => {
                 finalContent = content;
             }
 
+            // Scope is optional, defaults to 'project' in the service
             const result = await services.cartridgeService.create({
-                address: { kind: 'path', scope: scope as 'project' | 'shared', path },
+                address: {
+                    kind: 'path',
+                    scope: scope as 'project' | 'shared' | undefined,
+                    path
+                },
                 content: finalContent
             });
 
+            const effectiveScope = scope || 'project';
             ctx.stdio.stdout.write(`${result.id}\n`);
-            ctx.logger.info(`Created cartridge: ${result.id} at ${path}`);
+            ctx.logger.info(`Created ${effectiveScope} cartridge: ${result.id} at ${path}`);
         })
         .onError({ exitCode: 1, showStack: 'auto' })
         .build();

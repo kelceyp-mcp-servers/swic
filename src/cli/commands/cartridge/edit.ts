@@ -1,43 +1,38 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import AddressResolver from '../../../core/utils/AddressResolver.js';
+import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
 import { execSync } from 'child_process';
 import { writeFileSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-const addressResolver = AddressResolver.create({
-    idPattern: /^crt\d{3,}$/,
-    entityName: 'cartridge'
-});
-
 /**
  * Creates the 'edit' command for the cartridge CLI group.
  * Edits a cartridge using text replacement or interactive editor.
+ * Scope is optional - checks project first, then shared (or inferred from ID).
  *
  * @param services - Core services including cartridgeService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('edit')
-        .summary('Edit a cartridge')
+        .summary('Edit a cartridge (auto-resolves scope)')
         .param((p) => p
-            .name('scope')
+            .name('identifier')
             .type('string')
             .positional(0)
             .required()
+        )
+        .param((p) => p
+            .name('scope')
+            .type('string')
+            .flag('scope', 's')
             .validate((value) => {
-                if (value !== 'project' && value !== 'shared') {
+                if (value && value !== 'project' && value !== 'shared') {
                     return 'Scope must be "project" or "shared"';
                 }
                 return true;
             })
-        )
-        .param((p) => p
-            .name('identifier')
-            .type('string')
-            .positional(1)
-            .required()
         )
         .param((p) => p
             .name('interactive')
@@ -71,16 +66,16 @@ const create = (services: CoreServices) => {
             .flag('hash', 'h')
         )
         .run(async (ctx) => {
-            const { scope, identifier, interactive, old, new: newText, mode, hash } = ctx.params;
+            const { identifier, scope, interactive, old, new: newText, mode, hash } = ctx.params;
 
-            // Auto-detect if identifier is an ID or path
-            const resolved = addressResolver.resolve(identifier);
+            // Auto-detect if identifier is an ID or path using new resolver
+            const isId = CartridgeAddressResolver.isCartridgeId(identifier);
 
             // Read cartridge to get current content and hash
             const cartridge = await services.cartridgeService.read(
-                resolved.kind === 'id'
-                    ? { kind: 'id', scope: scope as 'project' | 'shared', id: resolved.value }
-                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value }
+                isId
+                    ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
+                    : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }
             );
 
             const baseHash = hash || cartridge.hash;
@@ -140,9 +135,9 @@ const create = (services: CoreServices) => {
 
             // Apply edits
             const result = await services.cartridgeService.editLatest(
-                (resolved.kind === 'id'
-                    ? { kind: 'id', scope: scope as 'project' | 'shared', id: resolved.value }
-                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value }) as any,
+                (isId
+                    ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
+                    : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }) as any,
                 baseHash,
                 edits
             );

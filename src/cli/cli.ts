@@ -7,6 +7,7 @@ import CreateCartridge from './commands/cartridge/create.js';
 import DeleteCartridge from './commands/cartridge/delete.js';
 import EditCartridge from './commands/cartridge/edit.js';
 import ListCartridge from './commands/cartridge/list.js';
+import MoveCartridge from './commands/cartridge/move.js';
 import ReadCartridge from './commands/cartridge/read.js';
 import FindProjectRoot from '../core/utils/findProjectRoot.js';
 
@@ -30,6 +31,7 @@ try {
                 .command(DeleteCartridge.create(services))
                 .command(EditCartridge.create(services))
                 .command(ListCartridge.create(services))
+                .command(MoveCartridge.create(services))
                 .command(ReadCartridge.create(services))
                 .build()
         );

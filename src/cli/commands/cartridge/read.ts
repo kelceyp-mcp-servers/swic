@@ -1,39 +1,36 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import AddressResolver from '../../../core/utils/AddressResolver.js';
-
-const addressResolver = AddressResolver.create({
-    idPattern: /^crt\d{3,}$/,
-    entityName: 'cartridge'
-});
+import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
 
 /**
  * Creates the 'read' command for the cartridge CLI group.
- * Reads and outputs a cartridge's content.
+ * Reads and outputs one or more cartridges' content.
+ * Accepts comma-separated identifiers (e.g., "crt001,crt002,crt003").
+ * Multiple cartridges are separated by empty lines in output.
+ * Scope is optional - checks project first, then shared (or inferred from ID).
  *
  * @param services - Core services including cartridgeService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('read')
-        .summary('Read a cartridge')
+        .summary('Read cartridge(s) - comma-separated (auto-resolves scope)')
         .param((p) => p
-            .name('scope')
+            .name('identifier')
             .type('string')
             .positional(0)
             .required()
+        )
+        .param((p) => p
+            .name('scope')
+            .type('string')
+            .flag('scope', 's')
             .validate((value) => {
-                if (value !== 'project' && value !== 'shared') {
+                if (value && value !== 'project' && value !== 'shared') {
                     return 'Scope must be "project" or "shared"';
                 }
                 return true;
             })
-        )
-        .param((p) => p
-            .name('identifier')
-            .type('string')
-            .positional(1)
-            .required()
         )
         .param((p) => p
             .name('meta')
@@ -41,31 +38,61 @@ const create = (services: CoreServices) => {
             .flag('meta', 'm')
         )
         .run(async (ctx) => {
-            const { scope, identifier, meta } = ctx.params;
+            const { identifier, scope, meta } = ctx.params;
 
-            // Auto-detect if identifier is an ID or path
-            const resolved = addressResolver.resolve(identifier);
+            // Parse comma-separated identifiers and deduplicate
+            const identifiers = identifier.includes(',')
+                ? [...new Set(identifier.split(',').map(id => id.trim()).filter(Boolean))]
+                : [identifier];
 
-            const cartridge = await services.cartridgeService.read(
-                resolved.kind === 'id'
-                    ? { kind: 'id', scope: scope as 'project' | 'shared', id: resolved.value }
-                    : { kind: 'path', scope: scope as 'project' | 'shared', path: resolved.value }
-            );
-
-            // If meta flag is set, output metadata first
-            if (meta) {
-                ctx.stdio.stdout.write(`ID: ${cartridge.id}\n`);
-                ctx.stdio.stdout.write(`Path: ${cartridge.path}\n`);
-                ctx.stdio.stdout.write(`Hash: ${cartridge.hash}\n`);
-                ctx.stdio.stdout.write(`---\n`);
+            // Handle empty result after parsing
+            if (identifiers.length === 0) {
+                throw new Error('No identifiers provided');
             }
 
-            // Output the content
-            ctx.stdio.stdout.write(cartridge.content);
+            // Validation phase: basic format check
+            for (const id of identifiers) {
+                if (!id || id.length === 0) {
+                    throw new Error(`Invalid identifier: empty string`);
+                }
+            }
 
-            // Add trailing newline if content doesn't end with one
-            if (!cartridge.content.endsWith('\n')) {
-                ctx.stdio.stdout.write('\n');
+            // Read phase: read all cartridges in parallel
+            const cartridges = await Promise.all(
+                identifiers.map(async (id) => {
+                    const isId = CartridgeAddressResolver.isCartridgeId(id);
+                    return await services.cartridgeService.read(
+                        isId
+                            ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id }
+                            : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }
+                    );
+                })
+            );
+
+            // Output phase: write each cartridge with empty line separator
+            for (let i = 0; i < cartridges.length; i++) {
+                const cartridge = cartridges[i];
+
+                // If meta flag is set, output metadata first
+                if (meta) {
+                    ctx.stdio.stdout.write(`ID: ${cartridge.id}\n`);
+                    ctx.stdio.stdout.write(`Path: ${cartridge.path}\n`);
+                    ctx.stdio.stdout.write(`Hash: ${cartridge.hash}\n`);
+                    ctx.stdio.stdout.write(`---\n`);
+                }
+
+                // Output the content
+                ctx.stdio.stdout.write(cartridge.content);
+
+                // Add trailing newline if content doesn't end with one
+                if (!cartridge.content.endsWith('\n')) {
+                    ctx.stdio.stdout.write('\n');
+                }
+
+                // Add empty line separator between cartridges (but not after the last one)
+                if (i < cartridges.length - 1) {
+                    ctx.stdio.stdout.write('\n');
+                }
             }
         })
         .onError({ exitCode: 1, showStack: 'auto' })

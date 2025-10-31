@@ -12,7 +12,7 @@
     "build-dist": "bun run scripts/server/build-dist.ts"
   },
   "dependencies": {
-    "@kelceyp/clibuilder": "^0.1.8",
+    "@kelceyp/clibuilder": "^0.1.9",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "debug": "^4.4.3"
   },

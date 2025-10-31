@@ -21,14 +21,14 @@ abstract: desired behaviours interacting with the user
 Cartridges are documents that augment our base knowledge with project specific knowledge as well as knowledge the user shares across several projects. We call these 'cartridges' as they are 'loaded' in the sessions where they are needed.
 
 They are located in:
-- `.data/project/cartridges/` - project-specific cartridges
-- `.data/shared/cartridges/` - cartridges shared across multiple projects
+- `.swic/cartridges/` - project-specific cartridges
+- `~/.swic/cartridges/` - cartridges shared across multiple projects
 
 ## Story Process
 
 We work in thin vertical slices that we call stories. We try to finesse over the first few stories so that we have an exemplar to refer to for subsequent slices.
 
-Instead of JIRA or other tracking systems, we use a .data/project/stories/ folder in the project root and a folder structure to specify state.
+Instead of JIRA or other tracking systems, we use a .swic/stories/ folder in the project root and a folder structure to specify state.
 
 Stories flow: **To-Do → In-Progress → Review → Done**
 
@@ -41,7 +41,7 @@ Structure:
     └── {state}/    # To-Do → In-Progress → Review → Done
 ```
 
-The details for the various documents can be found in .data/shared/cartridges/story-documents/
+The details for the various documents can be found in ~/.swic/cartridges/story-documents/
 
 ## Workflows:
 
@@ -55,7 +55,7 @@ We typically do work with a supervisor agent orchestrating a number of specialis
 
 Each phase uses subagents. Iterations continue until approval. Context management: stop early if running low, report incomplete.
 
-Documents describing the workflows are in .data/shared/cartridges/workflows/
+Documents describing the workflows are in ~/.swic/cartridges/workflows/
 
 ## Interviews
 
@@ -79,12 +79,12 @@ If running low on context during subtask work:
 
 SWIC (Story Workflow Integration Controller) is an MCP server for managing stories, subtasks, and pipelines through structured workflows.
 
-See: @.data/project/cartridges/swic/index.md
+See: @.swic/cartridges/swic/index.md
 
-Note: The direct access to `.data/` folders and manual processes described in this document will be phased out as we build the SWIC system. These will be replaced with MCP tools and automated workflows.
+Note: Direct filesystem access will be replaced with MCP tools and automated workflows as the SWIC system matures.
 
 ## Operations
 
 How to build, configure, test, and troubleshoot the SWIC MCP server. Covers building dist, MCP configuration, finding logs, and testing with `claude -p`.
 
-See: [.data/project/cartridges/operations.md](.data/project/cartridges/operations.md)
+See: [.swic/cartridges/operations.md](.swic/cartridges/operations.md)

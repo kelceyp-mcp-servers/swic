@@ -1,13 +1,8 @@
-import { Server as MCPServer } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-    CallToolRequestSchema,
-    ListToolsRequestSchema
-} from '@modelcontextprotocol/sdk/types.js';
-import debug from 'debug';
 import packageJson from '../../package.json';
 import type { CoreServices } from '../core/Core.js';
-import CartridgeCreateTool from './tools/cartridge/create.js';
+import { toolFactories } from './tools/index.js';
 
 /**
  * Server API interface
@@ -44,54 +39,32 @@ const create = (options: ServerOptions): ServerApi => {
     const name = packageJson.name;
     const version = packageJson.version;
 
-    const mcpServer = new MCPServer({name, version}, {capabilities: {tools: {}}});
-
-    // Initialize tools
-    const cartridgeCreateTool = CartridgeCreateTool.create(services);
-
-    /**
-     * Register available tools with the MCP server
-     * @internal
-     */
-    const registerTools = (): void => {
-        mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
-            return {
-                tools: [
-                    cartridgeCreateTool.definition
-                ]
-            };
-        });
-    };
-
-    /**
-     * Register tool execution handlers
-     * @internal
-     */
-    const registerToolHandlers = (): void => {
-        mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
-            const { name: toolName, arguments: args } = request.params;
-
-            switch (toolName) {
-                case 'cartridge_create':
-                    return await cartridgeCreateTool.handler(args, services);
-
-                default:
-                    throw new Error(`Unknown tool: ${toolName}`);
-            }
-        });
-    };
+    const server = new McpServer({ name, version });
 
     /**
      * Start the MCP server
      *
-     * Registers tools and handlers, then connects to stdio transport.
+     * Registers all tools using the high-level SDK API,
+     * then connects to stdio transport.
      * The server will run until the transport is closed.
      */
     const start = async (): Promise<void> => {
-        registerTools();
-        registerToolHandlers();
+        // Register all tools from the tool registry
+        for (const makeToolFn of toolFactories) {
+            const tool = makeToolFn(services);
+
+            server.registerTool(
+                tool.definition.name,
+                {
+                    description: tool.definition.description,
+                    inputSchema: tool.definition.inputSchema,
+                },
+                async (args) => tool.handler(args, services)
+            );
+        }
+
         const transport = new StdioServerTransport();
-        await mcpServer.connect(transport);
+        await server.connect(transport);
         console.error(`${name} v${version} running on stdio`);
     };
 

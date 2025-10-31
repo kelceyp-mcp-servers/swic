@@ -1,0 +1,104 @@
+import { z } from 'zod';
+import type { CoreServices } from '../../../core/Core.js';
+import type { CartridgeToolApi, ToolDefinition, ToolHandler, ToolResponse } from './shared/types.js';
+import { parseIdentifiers } from './shared/validators.js';
+import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+
+/**
+ * Creates the 'cartridge_delete' MCP tool
+ * Deletes one or more cartridges using optimistic locking
+ * Supports bulk operations with array input
+ * Idempotent - does not error on already-deleted cartridges
+ *
+ * @param services - Core services including cartridgeService
+ * @returns CartridgeToolApi with definition and handler
+ */
+const create = (services: CoreServices): CartridgeToolApi => {
+    const definition: ToolDefinition = {
+        name: 'cartridge_delete',
+        description: 'Delete one or more cartridges using optimistic locking. Idempotent - does not error if cartridge already deleted. Supports bulk operations by passing an array of identifiers.',
+        inputSchema: {
+            identifier: z.union([
+                z.string().describe('Single cartridge ID (e.g., "crt001") or path (e.g., "auth/jwt-setup")'),
+                z.array(z.string()).describe('Array of cartridge IDs or paths for bulk delete')
+            ]).describe('Cartridge identifier(s) - ID or path, single or array'),
+            scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),
+            expectedHash: z.string().optional().describe('Optional. Expected hash for optimistic locking. If omitted, automatically fetches current hash for each cartridge.')
+        }
+    };
+
+    const handler: ToolHandler = async (args) => {
+        const { identifier, scope, expectedHash } = args;
+
+        // Parse identifiers (handles both single and array)
+        const identifiers = parseIdentifiers(identifier);
+
+        // Read all cartridges in parallel to get hashes and verify existence
+        const cartridges = await Promise.all(
+            identifiers.map(async (id) => {
+                const isId = CartridgeAddressResolver.isCartridgeId(id);
+                const address = isId
+                    ? { kind: 'id' as const, scope: scope as 'project' | 'shared' | undefined, id }
+                    : { kind: 'path' as const, scope: scope as 'project' | 'shared' | undefined, path: id };
+
+                const cartridge = await services.cartridgeService.read(address);
+                return {
+                    identifier: id,
+                    address,
+                    cartridge
+                };
+            })
+        );
+
+        // Delete phase: delete all cartridges sequentially
+        const results: Array<{ id: string; deleted: boolean }> = [];
+
+        for (const item of cartridges) {
+            const hash = expectedHash || item.cartridge.hash;
+
+            const result = await services.cartridgeService.deleteLatest(
+                item.address,
+                hash
+            );
+
+            results.push({
+                id: item.cartridge.id,
+                deleted: result.deleted
+            });
+        }
+
+        // Report phase: summarize results
+        const deletedResults = results.filter(r => r.deleted);
+        const alreadyDeletedCount = results.length - deletedResults.length;
+
+        const summary = {
+            deleted: deletedResults.map(r => r.id),
+            alreadyDeleted: results.filter(r => !r.deleted).map(r => r.id),
+            message: `Deleted ${deletedResults.length} cartridge${deletedResults.length !== 1 ? 's' : ''}` +
+                     (alreadyDeletedCount > 0
+                         ? `, ${alreadyDeletedCount} ${alreadyDeletedCount !== 1 ? 'were' : 'was'} already deleted`
+                         : '')
+        };
+
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: JSON.stringify(summary, null, 2)
+                }
+            ]
+        };
+    };
+
+    return Object.freeze({
+        definition,
+        handler
+    });
+};
+
+const CartridgeDeleteTool = Object.freeze({
+    create
+});
+
+export default CartridgeDeleteTool;
+export type { CartridgeToolApi };
