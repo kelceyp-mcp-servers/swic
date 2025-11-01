@@ -1,0 +1,10 @@
+{
+  "name": "swic-test-existing",
+  "version": "1.0.0",
+  "description": "Test project for SWIC with existing folders",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bash test-script.sh"
+  }
+}

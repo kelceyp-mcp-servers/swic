@@ -1,6 +1,6 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
 import * as readline from 'readline';
 
 /**
@@ -21,18 +21,18 @@ const confirmPrompt = (message: string): Promise<boolean> => {
 };
 
 /**
- * Creates the 'delete' command for the cartridge CLI group.
- * Deletes one or more cartridges from the working copy using optimistic locking.
- * Accepts comma-separated identifiers (e.g., "crt001,crt002,crt003").
+ * Creates the 'delete' command for the doc CLI group.
+ * Deletes one or more docs from the working copy using optimistic locking.
+ * Accepts comma-separated identifiers (e.g., "doc001,doc002,doc003").
  * Scope is optional - checks project first, then shared (or inferred from ID).
  * Prompts for confirmation unless --confirm flag is provided.
  *
- * @param services - Core services including cartridgeService
+ * @param services - Core services including docService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('delete')
-        .summary('Delete cartridge(s) - comma-separated (auto-resolves scope, requires confirmation)')
+        .summary('Delete doc(s) - comma-separated (auto-resolves scope, requires confirmation)')
         .param((p) => p
             .name('identifier')
             .type('string')
@@ -79,15 +79,15 @@ const create = (services: CoreServices) => {
             for (const id of identifiers) {
                 // Basic format check - allow both IDs and paths
                 if (!id || id.length === 0) {
-                    throw new Error(`Invalid identifier: empty string`);
+                    throw new Error('Invalid identifier: empty string');
                 }
             }
 
-            // Read phase: read all cartridges in parallel (fail fast on error)
-            const cartridges = await Promise.all(
+            // Read phase: read all docs in parallel (fail fast on error)
+            const docs = await Promise.all(
                 identifiers.map(async (id) => {
-                    const isId = CartridgeAddressResolver.isCartridgeId(id);
-                    return await services.cartridgeService.read(
+                    const isId = docAddressResolver.isdocId(id);
+                    return await services.DocService.read(
                         isId
                             ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id }
                             : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }
@@ -99,27 +99,28 @@ const create = (services: CoreServices) => {
             if (!confirm) {
                 if (isSingleDelete) {
                     // Backward compatible single-delete UX
-                    const cartridge = cartridges[0];
-                    const resolvedScope = cartridge.id.startsWith('scrt') ? 'shared' : 'project';
+                    const doc = docs[0];
+                    const resolvedScope = doc.id.startsWith('sdoc') ? 'shared' : 'project';
                     const response = await confirmPrompt(
-                        `Delete ${resolvedScope} cartridge '${cartridge.path}' (${cartridge.id})?`
+                        `Delete ${resolvedScope} doc '${doc.path}' (${doc.id})?`
                     );
 
                     if (!response) {
                         ctx.logger.info('Deletion cancelled');
                         return;
                     }
-                } else {
+                }
+                else {
                     // Bulk delete UX with formatted list
-                    console.log(`\nCartridges to delete (${cartridges.length}):\n`);
+                    console.log(`\ndocs to delete (${docs.length}):\n`);
 
-                    for (const cartridge of cartridges) {
-                        const resolvedScope = cartridge.id.startsWith('scrt') ? 'shared' : 'project';
-                        console.log(`  ${resolvedScope.padEnd(8)} ${cartridge.path.padEnd(40)} (${cartridge.id})`);
+                    for (const doc of docs) {
+                        const resolvedScope = doc.id.startsWith('sdoc') ? 'shared' : 'project';
+                        console.log(`  ${resolvedScope.padEnd(8)} ${doc.path.padEnd(40)} (${doc.id})`);
                     }
 
                     const response = await confirmPrompt(
-                        `\nDelete ${cartridges.length} cartridge${cartridges.length > 1 ? 's' : ''}?`
+                        `\nDelete ${docs.length} doc${docs.length > 1 ? 's' : ''}?`
                     );
 
                     if (!response) {
@@ -129,22 +130,22 @@ const create = (services: CoreServices) => {
                 }
             }
 
-            // Delete phase: delete all cartridges sequentially
+            // Delete phase: delete all docs sequentially
             const results: Array<{ id: string; deleted: boolean }> = [];
 
-            for (const cartridge of cartridges) {
-                const id = identifiers[cartridges.indexOf(cartridge)];
-                const isId = CartridgeAddressResolver.isCartridgeId(id);
-                const expectedHash = hash || cartridge.hash;
+            for (const doc of docs) {
+                const id = identifiers[docs.indexOf(doc)];
+                const isId = docAddressResolver.isdocId(id);
+                const expectedHash = hash || doc.hash;
 
-                const result = await services.cartridgeService.deleteLatest(
+                const result = await services.DocService.deleteLatest(
                     (isId
                         ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id }
                         : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }) as any,
                     expectedHash
                 );
 
-                results.push({ id: cartridge.id, deleted: result.deleted });
+                results.push({ id: doc.id, deleted: result.deleted });
             }
 
             // Report phase: output results and summary
@@ -157,20 +158,22 @@ const create = (services: CoreServices) => {
 
             if (isSingleDelete) {
                 // Backward compatible single-delete messaging
-                const cartridge = cartridges[0];
-                const resolvedScope = cartridge.id.startsWith('scrt') ? 'shared' : 'project';
+                const doc = docs[0];
+                const resolvedScope = doc.id.startsWith('sdoc') ? 'shared' : 'project';
                 if (deletedResults.length > 0) {
-                    ctx.logger.info(`Deleted ${resolvedScope} cartridge: ${cartridge.id} at ${cartridge.path}`);
-                } else {
-                    ctx.logger.info(`Cartridge at ${cartridge.path} was already deleted`);
+                    ctx.logger.info(`Deleted ${resolvedScope} doc: ${doc.id} at ${doc.path}`);
                 }
-            } else {
+                else {
+                    ctx.logger.info(`doc at ${doc.path} was already deleted`);
+                }
+            }
+            else {
                 // Bulk delete summary
                 if (deletedResults.length > 0) {
-                    ctx.logger.info(`Deleted ${deletedResults.length} cartridge${deletedResults.length > 1 ? 's' : ''}`);
+                    ctx.logger.info(`Deleted ${deletedResults.length} doc${deletedResults.length > 1 ? 's' : ''}`);
                 }
                 if (alreadyDeletedCount > 0) {
-                    ctx.logger.info(`${alreadyDeletedCount} cartridge${alreadyDeletedCount > 1 ? 's were' : ' was'} already deleted`);
+                    ctx.logger.info(`${alreadyDeletedCount} doc${alreadyDeletedCount > 1 ? 's were' : ' was'} already deleted`);
                 }
             }
         })

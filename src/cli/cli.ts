@@ -1,23 +1,19 @@
 #!/usr/bin/env bun
-import { resolve } from 'path';
-import { homedir } from 'os';
 import { create, createCommandGroup } from '@kelceyp/clibuilder';
 import Core from '../core/Core.js';
-import CreateCartridge from './commands/cartridge/create.js';
-import DeleteCartridge from './commands/cartridge/delete.js';
-import EditCartridge from './commands/cartridge/edit.js';
-import ListCartridge from './commands/cartridge/list.js';
-import MoveCartridge from './commands/cartridge/move.js';
-import ReadCartridge from './commands/cartridge/read.js';
-import FindProjectRoot from '../core/utils/findProjectRoot.js';
+import Createdoc from './commands/doc/create.js';
+import Deletedoc from './commands/doc/delete.js';
+import Editdoc from './commands/doc/edit.js';
+import Listdoc from './commands/doc/list.js';
+import Movedoc from './commands/doc/move.js';
+import Readdoc from './commands/doc/read.js';
 
 try {
-    const projectBoundaryDir = FindProjectRoot.findProjectRoot();
-    const sharedBoundaryDir = resolve(homedir(), '.swic');
+    const { projectDataDir, sharedDataDir } = Core.lazilyGetDataDirs();
 
     const services = Core.createServices({
-        projectBoundaryDir,
-        sharedBoundaryDir
+        projectBoundaryDir: projectDataDir,
+        sharedBoundaryDir: sharedDataDir
     });
 
     const app = create()
@@ -25,14 +21,14 @@ try {
         .version('0.1.0')
         .description('SWIC - Stories Workflows Injected Context')
         .group(
-            createCommandGroup('cartridge')
-                .summary('Cartridge operations')
-                .command(CreateCartridge.create(services))
-                .command(DeleteCartridge.create(services))
-                .command(EditCartridge.create(services))
-                .command(ListCartridge.create(services))
-                .command(MoveCartridge.create(services))
-                .command(ReadCartridge.create(services))
+            createCommandGroup('doc')
+                .summary('doc operations')
+                .command(Createdoc.create(services))
+                .command(Deletedoc.create(services))
+                .command(Editdoc.create(services))
+                .command(Listdoc.create(services))
+                .command(Movedoc.create(services))
+                .command(Readdoc.create(services))
                 .build()
         );
 

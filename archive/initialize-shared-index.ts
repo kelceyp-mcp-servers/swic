@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
 /**
- * Initialize shared cartridges index from existing files
+ * Initialize shared docs index from existing files
  *
  * This script:
- * 1. Scans ~/.swic/cartridges/ recursively for all files
- * 2. Generates scrt### IDs for each file
+ * 1. Scans ~/.swic/docs/ recursively for all files
+ * 2. Generates sdoc### IDs for each file
  * 3. Creates .index.json with ID → path mappings
  * 4. Backs up existing index if present
  *
@@ -13,7 +13,7 @@
  *   bun scripts/initialize-shared-index.ts [--dry-run]
  */
 
-import { readdirSync, statSync, existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
+import { readdirSync, existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
 import { join, relative } from 'path';
 import { homedir } from 'os';
 
@@ -54,12 +54,14 @@ const findAllFiles = (dir: string, baseDir: string): string[] => {
             if (entry.isDirectory()) {
                 // Recurse into subdirectories
                 results.push(...findAllFiles(fullPath, baseDir));
-            } else if (entry.isFile()) {
+            }
+            else if (entry.isFile()) {
                 // Add file with relative path from base directory
                 results.push(relativePath);
             }
         }
-    } catch (error: any) {
+    }
+    catch (error: any) {
         console.error(`Error reading directory ${dir}:`, error.message);
     }
 
@@ -67,15 +69,15 @@ const findAllFiles = (dir: string, baseDir: string): string[] => {
 };
 
 const initializeSharedIndex = async (options: InitializeOptions) => {
-    const sharedDir = join(homedir(), '.swic', 'cartridges');
+    const sharedDir = join(homedir(), '.swic', 'docs');
     const indexPath = join(sharedDir, '.index.json');
 
-    console.log('SWIC Shared Cartridges Index Initialization');
+    console.log('SWIC Shared docs Index Initialization');
     console.log('===========================================\n');
 
     // Check if shared directory exists
     if (!existsSync(sharedDir)) {
-        console.log(`Shared cartridges directory not found: ${sharedDir}`);
+        console.log(`Shared docs directory not found: ${sharedDir}`);
         console.log('Creating directory...');
         if (!options.dryRun) {
             mkdirSync(sharedDir, { recursive: true });
@@ -103,7 +105,7 @@ const initializeSharedIndex = async (options: InitializeOptions) => {
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const id = `scrt${(i + 1).toString().padStart(3, '0')}`;
+        const id = `sdoc${(i + 1).toString().padStart(3, '0')}`;
 
         // Store paths exactly as they exist on disk (with extensions)
         index[id] = file;
@@ -140,14 +142,15 @@ const initializeSharedIndex = async (options: InitializeOptions) => {
     if (options.dryRun) {
         console.log('DRY RUN: No changes written.');
         console.log('Run without --dry-run to create the index.');
-    } else {
+    }
+    else {
         writeFileSync(indexPath, JSON.stringify(index, null, 2), 'utf-8');
         console.log(`✓ Created index: ${indexPath}`);
-        console.log(`✓ Indexed ${files.length} cartridges with scrt### IDs`);
+        console.log(`✓ Indexed ${files.length} docs with sdoc### IDs`);
         console.log('\nNext steps:');
-        console.log('  1. Run: swic cartridge list');
-        console.log('  2. Verify all cartridges are listed');
-        console.log('  3. Try reading a cartridge by path or ID');
+        console.log('  1. Run: swic doc list');
+        console.log('  2. Verify all docs are listed');
+        console.log('  3. Try reading a doc by path or ID');
     }
 };
 
@@ -161,7 +164,8 @@ const main = async () => {
         }
 
         await initializeSharedIndex(options);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Initialization failed:', error);
         process.exit(1);
     }

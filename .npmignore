@@ -1,0 +1,47 @@
+# Source files
+src/
+scripts/
+archive/
+tests/
+
+# Project-specific
+.swic/
+.claude/
+CLAUDE.md
+claude.md
+
+# Build artifacts
+*.ts
+!*.d.ts
+tsconfig.json
+.eslintrc.json
+
+# Environment
+.env*
+*.log
+
+# Development
+node_modules/
+coverage/
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Keep these
+!dist/
+!README.md
+!LICENSE
+!package.json

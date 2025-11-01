@@ -1,24 +1,24 @@
 #!/usr/bin/env bun
 
-// Build the SWIC server to dist folder
+// Build the SWIC CLI to dist folder
 //
 // Usage: build-dist.ts [options]
 //
-// Builds the server to dist/ folder, minified with no source maps
+// Builds the CLI to dist/ folder, minified with no source maps
 
 // Handle description request
 if (process.argv[2] === '--description') {
-    console.log('Build SWIC server to dist folder');
+    console.log('Build SWIC CLI to dist folder');
     process.exit(0);
 }
 
 // Handle help request
 if (process.argv[2] === '--help') {
-    console.log('Build SWIC server to dist folder');
+    console.log('Build SWIC CLI to dist folder');
     console.log('');
     console.log('Usage: build-dist.ts [options]');
     console.log('');
-    console.log('Builds the SWIC MCP server to dist/ folder.');
+    console.log('Builds the SWIC CLI to dist/ folder.');
     console.log('Output is minified with no source maps.');
     console.log('');
     console.log('Options:');
@@ -27,7 +27,7 @@ if (process.argv[2] === '--help') {
     console.log('  --usage        Show usage line');
     console.log('');
     console.log('Output:');
-    console.log('  Creates dist/server/Server.js');
+    console.log('  Creates dist/cli/cli.js');
     process.exit(0);
 }
 
@@ -38,30 +38,23 @@ if (process.argv[2] === '--usage') {
 }
 
 import { spawn } from 'child_process';
-import { rmSync } from 'fs';
 import { join } from 'path';
 
 /** Project root directory */
 const projectRoot = join(import.meta.dir, '../..');
 
 /**
- * Clean the dist directory
- */
-console.log('Cleaning dist directory...');
-rmSync(join(projectRoot, 'dist'), { recursive: true, force: true });
-
-/**
- * Build the server with bun
- * - Target: bun runtime
+ * Build the CLI with bun (for node runtime)
+ * - Target: node runtime (so users don't need bun)
  * - Minified output
  * - No source maps
  */
-console.log('Building server...');
+console.log('Building CLI...');
 const proc = spawn('bun', [
     'build',
-    'src/server/Server.ts',
-    '--outdir', 'dist/server',
-    '--target', 'bun',
+    'src/cli/cli.ts',
+    '--outdir', 'dist/cli',
+    '--target', 'node',
     '--minify',
     '--no-sourcemap'
 ], {
@@ -71,11 +64,11 @@ const proc = spawn('bun', [
 
 proc.on('close', (code) => {
     if (code === 0) {
-        console.log('✅ Build completed successfully');
-        console.log('   Output: dist/server/Server.js');
+        console.log('✅ CLI build completed successfully');
+        console.log('   Output: dist/cli/cli.js');
     }
     else {
-        console.log('❌ Build failed with code', code);
+        console.log('❌ CLI build failed with code', code);
         process.exit(code || 1);
     }
 });

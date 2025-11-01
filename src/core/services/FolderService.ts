@@ -3,7 +3,7 @@ import { resolve, dirname, isAbsolute } from 'path';
 import pathSecurity from '../utils/pathSecurity.js';
 
 import type { Stats } from 'fs';
-import type { FsError, ResolveOptions } from '../utils/pathSecurity.js';
+import type { FsError as _FsError, ResolveOptions } from '../utils/pathSecurity.js';
 
 /**
  * Options for creating a FolderService instance

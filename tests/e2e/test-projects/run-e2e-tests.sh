@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+# Run all E2E tests in test-projects/
+# Runs each test-script.sh in the order specified
+
+set -e  # Note: we handle failures ourselves, don't exit on first error
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Install bun if not already available
+if ! command -v bun &> /dev/null; then
+    echo "Installing bun..."
+    curl -fsSL https://bun.sh/install | bash
+    # Source the bashrc to get bun in PATH
+    source "$HOME/.bashrc"
+    echo "✅ Bun installed successfully"
+else
+    echo "✅ Bun already installed"
+fi
+
+# Ensure bun is in PATH for all child processes
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+FAILED=0
+PASSED=0
+OUTPUT=""
+
+echo "========================================="
+echo "Running All E2E Tests"
+echo "========================================="
+echo ""
+
+# Define test projects in execution order
+# Order matters: test fresh install before existing folders
+TEST_PROJECTS=(
+    "npm-project-fresh"
+    "npm-project-existing-swic"
+)
+
+# Run each test project
+for dir_name in "${TEST_PROJECTS[@]}"; do
+    # Check if test directory exists
+    if [[ ! -d "$dir_name" ]]; then
+        echo "⚠️  Warning: Test directory not found: $dir_name"
+        OUTPUT="$OUTPUT\n⚠️  $dir_name: SKIPPED (directory not found)"
+        continue
+    fi
+
+    # Check if test-script.sh exists
+    if [[ ! -f "$dir_name/test-script.sh" ]]; then
+        echo "⚠️  Warning: test-script.sh not found in: $dir_name"
+        OUTPUT="$OUTPUT\n⚠️  $dir_name: SKIPPED (no test script)"
+        continue
+    fi
+
+    echo "Running test: $dir_name"
+    echo "-----------------------------------------"
+
+    # Enter the test directory
+    cd "$dir_name"
+
+    # Run the test script
+    if bash test-script.sh; then
+        OUTPUT="$OUTPUT\n✅ $dir_name: PASSED"
+        PASSED=$((PASSED + 1))
+    else
+        OUTPUT="$OUTPUT\n❌ $dir_name: FAILED"
+        FAILED=$((FAILED + 1))
+    fi
+
+    # Return to test-projects directory
+    cd "$SCRIPT_DIR"
+
+    echo ""
+done
+
+# Summary
+echo "========================================="
+echo "Test Summary"
+echo "========================================="
+echo -e "$OUTPUT"
+echo ""
+echo "Passed: $PASSED"
+echo "Failed: $FAILED"
+echo "========================================="
+
+if [ $FAILED -eq 0 ]; then
+    echo "✅ All tests passed!"
+    exit 0
+else
+    echo "❌ Some tests failed"
+    exit 1
+fi

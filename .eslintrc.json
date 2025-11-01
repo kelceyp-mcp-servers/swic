@@ -1,0 +1,49 @@
+{
+    "env": {
+        "es2022": true,
+        "node": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "rules": {
+        "indent": ["error", 4],
+        "quotes": ["error", "single", { "avoidEscape": true }],
+        "brace-style": ["error", "stroustrup", { "allowSingleLine": false }],
+
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error", {
+            "argsIgnorePattern": "^_",
+            "varsIgnorePattern": "^_"
+        }],
+        "no-console": ["warn", { "allow": ["error", "warn"] }],
+        "prefer-const": "error",
+        "@typescript-eslint/no-explicit-any": "warn",
+
+        "camelcase": ["error", {
+            "properties": "always",
+            "allow": ["created_at", "updated_at", "key_hash"]
+        }],
+        "comma-dangle": ["error", "never"],
+        "semi": ["error", "always"],
+        "@typescript-eslint/ban-ts-comment": ["error", {
+            "ts-ignore": "allow-with-description",
+            "minimumDescriptionLength": 10
+        }]
+    },
+    "overrides": [
+        {
+            "files": ["scripts/**/*.ts", "archive/**/*.ts", "src/cli/commands/**/*.ts"],
+            "rules": {
+                "no-console": "off"
+            }
+        }
+    ]
+}

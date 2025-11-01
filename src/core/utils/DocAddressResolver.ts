@@ -2,43 +2,43 @@ import AddressResolver from './AddressResolver.js';
 import type { AddressResolverApi } from './AddressResolver.js';
 
 /**
- * Scope where cartridges are stored
+ * Scope where docs are stored
  */
 type Scope = 'project' | 'shared';
 
 /**
- * Cartridge ID formats
+ * doc ID formats
  */
-type ProjectCartridgeId = `crt${string}`;
-type SharedCartridgeId = `scrt${string}`;
-type CartridgeId = ProjectCartridgeId | SharedCartridgeId;
+type ProjectdocId = `doc${string}`;
+type ShareddocId = `sdoc${string}`;
+type docId = ProjectdocId | ShareddocId;
 
 /**
- * Project cartridge resolver (crt### pattern)
+ * Project doc resolver (doc### pattern)
  */
 const projectResolver: AddressResolverApi = AddressResolver.create({
-    idPattern: /^crt\d{3,}$/,
-    entityName: 'project-cartridge'
+    idPattern: /^doc\d{3,}$/,
+    entityName: 'project-doc'
 });
 
 /**
- * Shared cartridge resolver (scrt### pattern)
+ * Shared doc resolver (sdoc### pattern)
  */
 const sharedResolver: AddressResolverApi = AddressResolver.create({
-    idPattern: /^scrt\d{3,}$/,
-    entityName: 'shared-cartridge'
+    idPattern: /^sdoc\d{3,}$/,
+    entityName: 'shared-doc'
 });
 
 /**
- * Detects scope from cartridge ID prefix
+ * Detects scope from doc ID prefix
  *
- * @param id - Cartridge ID to check
- * @returns 'project' if crt###, 'shared' if scrt###, undefined if neither
+ * @param id - doc ID to check
+ * @returns 'project' if doc###, 'shared' if sdoc###, undefined if neither
  *
  * @example
  * ```typescript
- * detectScopeFromId('crt001');   // 'project'
- * detectScopeFromId('scrt005');  // 'shared'
+ * detectScopeFromId('doc001');   // 'project'
+ * detectScopeFromId('sdoc005');  // 'shared'
  * detectScopeFromId('invalid');  // undefined
  * ```
  */
@@ -53,12 +53,12 @@ export const detectScopeFromId = (id: string): Scope | undefined => {
 };
 
 /**
- * Check if string is a valid cartridge ID (either project or shared)
+ * Check if string is a valid doc ID (either project or shared)
  *
  * @param identifier - String to check
- * @returns true if matches crt### or scrt### pattern
+ * @returns true if matches doc### or sdoc### pattern
  */
-export const isCartridgeId = (identifier: string): identifier is CartridgeId => {
+export const isdocId = (identifier: string): identifier is docId => {
     return projectResolver.isId(identifier) || sharedResolver.isId(identifier);
 };
 
@@ -84,43 +84,43 @@ export const validateIdForScope = (id: string, scope: Scope): boolean => {
 };
 
 /**
- * CartridgeAddressResolver utility module
+ * docAddressResolver utility module
  *
- * Provides scope-aware cartridge identifier resolution.
+ * Provides scope-aware doc identifier resolution.
  * Manages two AddressResolver instances (project and shared scopes)
- * with distinct ID patterns (crt### vs scrt###).
+ * with distinct ID patterns (doc### vs sdoc###).
  *
  * ## ID Formats
- * - **Project**: `crt001`, `crt002`, ... `crt999`, `crt1000`, ...
- * - **Shared**: `scrt001`, `scrt002`, ... `scrt999`, `scrt1000`, ...
+ * - **Project**: `doc001`, `doc002`, ... `doc999`, `doc1000`, ...
+ * - **Shared**: `sdoc001`, `sdoc002`, ... `sdoc999`, `sdoc1000`, ...
  *
  * ## Usage
  *
  * ```typescript
- * import { detectScopeFromId, isCartridgeId, getResolverForScope } from './CartridgeAddressResolver.js';
+ * import { detectScopeFromId, isdocId, getResolverForScope } from './docAddressResolver.js';
  *
  * // Detect scope from ID
- * const scope = detectScopeFromId('crt001');  // 'project'
+ * const scope = detectScopeFromId('doc001');  // 'project'
  *
  * // Check if valid ID
- * if (isCartridgeId(identifier)) {
- *     // Use as CartridgeId type
+ * if (isdocId(identifier)) {
+ *     // Use as docId type
  * }
  *
  * // Get scope-specific resolver
  * const resolver = getResolverForScope('shared');
- * resolver.isId('scrt001');  // true
+ * resolver.isId('sdoc001');  // true
  * ```
  *
- * @module CartridgeAddressResolver
+ * @module docAddressResolver
  */
-export const CartridgeAddressResolver = Object.freeze({
+export const docAddressResolver = Object.freeze({
     project: projectResolver,
     shared: sharedResolver,
     detectScopeFromId,
-    isCartridgeId,
+    isdocId,
     getResolverForScope,
     validateIdForScope
 });
 
-export default CartridgeAddressResolver;
+export default docAddressResolver;

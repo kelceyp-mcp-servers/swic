@@ -9,16 +9,16 @@ const COLORS = {
 };
 
 /**
- * Creates the 'list' command for the cartridge CLI group.
- * Lists all cartridges (both scopes by default) with override detection.
+ * Creates the 'list' command for the doc CLI group.
+ * Lists all docs (both scopes by default) with override detection.
  * Scope is optional - omit to list from both scopes.
  *
- * @param services - Core services including cartridgeService
+ * @param services - Core services including docService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('list')
-        .summary('List cartridges (defaults to both scopes with override detection)')
+        .summary('List docs (defaults to both scopes with override detection)')
         .param((p) => p
             .name('scope')
             .type('string')
@@ -43,7 +43,7 @@ const create = (services: CoreServices) => {
         .run(async (ctx) => {
             const { scope, prefix, full } = ctx.params;
 
-            const items = await services.cartridgeService.list({
+            const items = await services.DocService.list({
                 scope: scope as 'project' | 'shared' | undefined,
                 pathPrefix: prefix,
                 includeContent: full || false
@@ -51,7 +51,7 @@ const create = (services: CoreServices) => {
 
             if (items.length === 0) {
                 const scopeMsg = scope ? `in ${scope} scope` : '';
-                ctx.logger.info(`No cartridges found ${scopeMsg}`);
+                ctx.logger.info(`No docs found ${scopeMsg}`);
                 return;
             }
 
@@ -66,16 +66,19 @@ const create = (services: CoreServices) => {
                 if (full) {
                     const header = `${'ID'.padEnd(maxIdWidth)}  ${'NAME'.padEnd(maxPathWidth)}  ${'SCOPE'.padEnd(maxScopeWidth)}  ${'OVERRIDE'.padEnd(maxOverrideWidth)}  SYNOPSIS`;
                     ctx.stdio.stdout.write(header + '\n');
-                } else {
+                }
+                else {
                     const header = `${'ID'.padEnd(maxIdWidth)}  ${'NAME'.padEnd(maxPathWidth)}  ${'SCOPE'.padEnd(maxScopeWidth)}  OVERRIDE`;
                     ctx.stdio.stdout.write(header + '\n');
                 }
-            } else {
+            }
+            else {
                 // Legacy 2-column format when scope is specified
                 if (full) {
                     const header = `${'ID'.padEnd(maxIdWidth)}  ${'PATH'.padEnd(maxPathWidth)}  SYNOPSIS`;
                     ctx.stdio.stdout.write(header + '\n');
-                } else {
+                }
+                else {
                     const header = `${'ID'.padEnd(maxIdWidth)}  PATH`;
                     ctx.stdio.stdout.write(header + '\n');
                 }
@@ -93,17 +96,20 @@ const create = (services: CoreServices) => {
                         const synopsis = item.synopsis || '';
                         const line = `${color}${item.id.padEnd(maxIdWidth)}${reset}  ${item.path.padEnd(maxPathWidth)}  ${color}${item.scope.padEnd(maxScopeWidth)}${reset}  ${overrideStr.padEnd(maxOverrideWidth)}  ${synopsis}`;
                         ctx.stdio.stdout.write(line + '\n');
-                    } else {
+                    }
+                    else {
                         const line = `${color}${item.id.padEnd(maxIdWidth)}${reset}  ${item.path.padEnd(maxPathWidth)}  ${color}${item.scope.padEnd(maxScopeWidth)}${reset}  ${overrideStr}`;
                         ctx.stdio.stdout.write(line + '\n');
                     }
-                } else {
+                }
+                else {
                     // Legacy 2-column format
                     if (full) {
                         const synopsis = item.synopsis || '';
                         const line = `${item.id.padEnd(maxIdWidth)}  ${item.path.padEnd(maxPathWidth)}  ${synopsis}`;
                         ctx.stdio.stdout.write(line + '\n');
-                    } else {
+                    }
+                    else {
                         const line = `${item.id.padEnd(maxIdWidth)}  ${item.path}`;
                         ctx.stdio.stdout.write(line + '\n');
                     }

@@ -45,12 +45,14 @@ export const parseIdentifiers = (input: unknown): string[] => {
 
     if (typeof input === 'string') {
         identifiers = [input];
-    } else if (Array.isArray(input)) {
+    }
+    else if (Array.isArray(input)) {
         if (input.length === 0) {
             throw new Error('identifier array cannot be empty');
         }
         identifiers = input;
-    } else {
+    }
+    else {
         throw new Error('identifier must be a string or array of strings');
     }
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 
 /**
- * Migration script to convert shared cartridge IDs from crt### to scrt###
+ * Migration script to convert shared doc IDs from doc### to sdoc###
  *
  * This script:
  * 1. Backs up the current .index.json
- * 2. Scans ~/.swic/cartridges/ for the index file
- * 3. Converts all crt### IDs to scrt### format
+ * 2. Scans ~/.swic/docs/ for the index file
+ * 3. Converts all doc### IDs to sdoc### format
  * 4. Writes the updated index back
  *
  * Usage:
@@ -40,16 +40,16 @@ const parseArgs = (): MigrationOptions => {
     return options;
 };
 
-const migrateSharedCartridgeIds = async (options: MigrationOptions) => {
-    const sharedDir = join(homedir(), '.swic', 'cartridges');
+const migrateShareddocIds = async (options: MigrationOptions) => {
+    const sharedDir = join(homedir(), '.swic', 'docs');
     const indexPath = join(sharedDir, '.index.json');
 
-    console.log('SWIC Shared Cartridge ID Migration');
+    console.log('SWIC Shared doc ID Migration');
     console.log('===================================\n');
 
     // Check if shared directory exists
     if (!existsSync(sharedDir)) {
-        console.log(`Shared cartridges directory not found: ${sharedDir}`);
+        console.log(`Shared docs directory not found: ${sharedDir}`);
         console.log('Nothing to migrate.');
         return;
     }
@@ -67,16 +67,17 @@ const migrateSharedCartridgeIds = async (options: MigrationOptions) => {
 
     try {
         index = JSON.parse(indexContent);
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error parsing index file:', error);
         process.exit(1);
     }
 
     // Check if migration is needed
-    const needsMigration = Object.keys(index).some(id => id.startsWith('crt'));
+    const needsMigration = Object.keys(index).some(id => id.startsWith('doc'));
 
     if (!needsMigration) {
-        console.log('Index already uses scrt### format. Nothing to migrate.');
+        console.log('Index already uses sdoc### format. Nothing to migrate.');
         return;
     }
 
@@ -99,20 +100,21 @@ const migrateSharedCartridgeIds = async (options: MigrationOptions) => {
     const migrations: Array<{ old: string; new: string; path: string }> = [];
 
     for (const [id, path] of Object.entries(index)) {
-        if (id.startsWith('crt')) {
-            // Convert crt### to scrt###
+        if (id.startsWith('doc')) {
+            // Convert doc### to sdoc###
             const newId = `s${id}`;
             newIndex[newId] = path;
             migrations.push({ old: id, new: newId, path });
-        } else {
-            // Keep existing scrt### or other IDs
+        }
+        else {
+            // Keep existing sdoc### or other IDs
             newIndex[id] = path;
         }
     }
 
     // Display migration summary
-    console.log(`Found ${Object.keys(index).length} total cartridges`);
-    console.log(`Migrating ${migrations.length} IDs from crt### to scrt### format\n`);
+    console.log(`Found ${Object.keys(index).length} total docs`);
+    console.log(`Migrating ${migrations.length} IDs from doc### to sdoc### format\n`);
 
     if (migrations.length > 0) {
         console.log('Migrations:');
@@ -126,10 +128,11 @@ const migrateSharedCartridgeIds = async (options: MigrationOptions) => {
     if (options.dryRun) {
         console.log('DRY RUN: No changes written.');
         console.log('Run without --dry-run to apply changes.');
-    } else {
+    }
+    else {
         writeFileSync(indexPath, JSON.stringify(newIndex, null, 2), 'utf-8');
         console.log(`✓ Updated index file: ${indexPath}`);
-        console.log(`✓ Migration complete!`);
+        console.log('✓ Migration complete!');
     }
 };
 
@@ -142,8 +145,9 @@ const main = async () => {
             console.log('Running in DRY RUN mode (no changes will be made)\n');
         }
 
-        await migrateSharedCartridgeIds(options);
-    } catch (error) {
+        await migrateShareddocIds(options);
+    }
+    catch (error) {
         console.error('Migration failed:', error);
         process.exit(1);
     }

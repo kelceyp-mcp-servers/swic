@@ -17,13 +17,13 @@ abstract: desired behaviours interacting with the user
 8. **Don't run ahead of the user** - Work with the user. Don't get ahead of them.
 9. **No time estimates** - They're always wrong and create false expectations. Just do the work.
 
-## Cartridges
+## docs
 
-Cartridges are documents that augment our base knowledge with project specific knowledge as well as knowledge the user shares across several projects. We call these 'cartridges' as they are 'loaded' in the sessions where they are needed.
+docs are documents that augment our base knowledge with project specific knowledge as well as knowledge the user shares across several projects. We call these 'docs' as they are 'loaded' in the sessions where they are needed.
 
 They are located in:
-- `.swic/cartridges/` - project-specific cartridges
-- `~/.swic/cartridges/` - cartridges shared across multiple projects
+- `.swic/docs/` - project-specific docs
+- `~/.swic/docs/` - docs shared across multiple projects
 
 ## Story Process
 
@@ -42,7 +42,7 @@ Structure:
     └── {state}/    # To-Do → In-Progress → Review → Done
 ```
 
-The details for the various documents can be found in ~/.swic/cartridges/story-documents/
+The details for the various documents can be found in ~/.swic/docs/story-documents/
 
 ## Workflows:
 
@@ -56,7 +56,7 @@ We typically do work with a supervisor agent orchestrating a number of specialis
 
 Each phase uses subagents. Iterations continue until approval. Context management: stop early if running low, report incomplete.
 
-Documents describing the workflows are in ~/.swic/cartridges/workflows/
+Documents describing the workflows are in ~/.swic/docs/workflows/
 
 ## Interviews
 
@@ -80,7 +80,7 @@ If running low on context during subtask work:
 
 SWIC (Story Workflow Integration Controller) is an MCP server for managing stories, subtasks, and pipelines through structured workflows.
 
-See: @.swic/cartridges/swic/index.md
+See: @.swic/docs/swic/index.md
 
 Note: Direct filesystem access will be replaced with MCP tools and automated workflows as the SWIC system matures.
 
@@ -88,4 +88,4 @@ Note: Direct filesystem access will be replaced with MCP tools and automated wor
 
 How to build, configure, test, and troubleshoot the SWIC MCP server. Covers building dist, MCP configuration, finding logs, and testing with `claude -p`.
 
-See: [.swic/cartridges/operations.md](.swic/cartridges/operations.md)
+See: [.swic/docs/operations.md](.swic/docs/operations.md)

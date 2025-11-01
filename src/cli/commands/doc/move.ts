@@ -1,6 +1,6 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
 import * as readline from 'readline';
 
 /**
@@ -21,24 +21,24 @@ const confirmPrompt = (message: string): Promise<boolean> => {
 };
 
 /**
- * Creates the 'move' command for the cartridge CLI group.
- * Moves/renames a cartridge by creating at destination and deleting source.
+ * Creates the 'move' command for the doc CLI group.
+ * Moves/renames a doc by creating at destination and deleting source.
  * Works for both same-scope and cross-scope moves.
  * Always generates a new ID (even for same-scope moves).
  * Prompts for confirmation unless --confirm flag is provided.
  *
- * @param services - Core services including cartridgeService
+ * @param services - Core services including docService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('move')
-        .summary('Move/rename a cartridge to a new path (generates new ID)')
+        .summary('Move/rename a doc to a new path (generates new ID)')
         .param((p) => p
             .name('source')
             .type('string')
             .positional(0)
             .required()
-            .prompt('Source cartridge (ID or path):')
+            .prompt('Source doc (ID or path):')
         )
         .param((p) => p
             .name('destination')
@@ -82,16 +82,16 @@ const create = (services: CoreServices) => {
         .run(async (ctx) => {
             const { source, destination, scope, toScope, confirm } = ctx.params;
 
-            // 1. Read source cartridge
-            const isId = CartridgeAddressResolver.isCartridgeId(source);
-            const sourceCart = await services.cartridgeService.read(
+            // 1. Read source doc
+            const isId = docAddressResolver.isdocId(source);
+            const sourceCart = await services.DocService.read(
                 isId
                     ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: source }
                     : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: source }
             );
 
             // 2. Determine destination scope
-            const sourceScope = sourceCart.id.startsWith('scrt') ? 'shared' : 'project';
+            const sourceScope = sourceCart.id.startsWith('sdoc') ? 'shared' : 'project';
             const destScope = (toScope as 'project' | 'shared' | undefined) || sourceScope;
             const isCrossScope = sourceScope !== destScope;
 
@@ -102,17 +102,18 @@ const create = (services: CoreServices) => {
 
             // 4. Check if destination exists
             try {
-                await services.cartridgeService.read({
+                await services.DocService.read({
                     kind: 'path',
                     scope: destScope,
                     path: destination
                 });
                 // If read succeeds, destination exists
                 throw new Error(`Destination already exists: ${destScope} ${destination}`);
-            } catch (err: any) {
+            }
+            catch (err: any) {
                 // Expected: destination doesn't exist
-                // Can be either "No cartridge" or "File or directory not found"
-                const isNotFound = err.message.includes('No cartridge') ||
+                // Can be either "No doc" or "File or directory not found"
+                const isNotFound = err.message.includes('No doc') ||
                                    err.message.includes('not found') ||
                                    err.message.includes('File or directory');
                 if (!isNotFound) {
@@ -124,17 +125,18 @@ const create = (services: CoreServices) => {
             // 5. Confirmation prompt (unless --confirm)
             if (!confirm) {
                 if (isCrossScope) {
-                    console.log('Moving cartridge across scopes:');
+                    console.log('Moving doc across scopes:');
                     console.log(`  From: ${sourceScope.padEnd(8)} ${sourceCart.path} (${sourceCart.id})`);
                     console.log(`  To:   ${destScope.padEnd(8)} ${destination} (new ID will be assigned)\n`);
                     console.log('Note: Cross-scope move will generate a new ID.');
-                } else {
-                    console.log('Moving cartridge:');
+                }
+                else {
+                    console.log('Moving doc:');
                     console.log(`  From: ${sourceScope} ${sourceCart.path} (${sourceCart.id})`);
                     console.log(`  To:   ${destScope} ${destination}`);
                 }
 
-                const response = await confirmPrompt('\nMove cartridge?');
+                const response = await confirmPrompt('\nMove doc?');
                 if (!response) {
                     ctx.logger.info('Move cancelled');
                     return;
@@ -142,7 +144,7 @@ const create = (services: CoreServices) => {
             }
 
             // 6. Create at destination
-            const newCart = await services.cartridgeService.create({
+            const newCart = await services.DocService.create({
                 address: {
                     kind: 'path',
                     path: destination,
@@ -155,7 +157,7 @@ const create = (services: CoreServices) => {
             const deleteAddress = isId
                 ? { kind: 'id' as const, id: source }
                 : { kind: 'path' as const, path: source };
-            await services.cartridgeService.deleteLatest(
+            await services.DocService.deleteLatest(
                 deleteAddress,
                 sourceCart.hash
             );

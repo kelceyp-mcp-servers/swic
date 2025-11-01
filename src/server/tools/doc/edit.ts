@@ -1,23 +1,23 @@
 import { z } from 'zod';
 import type { CoreServices } from '../../../core/Core.js';
-import type { CartridgeToolApi, ToolDefinition, ToolHandler, ToolResponse } from './shared/types.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
-import type { EditOp } from '../../../core/services/CartridgeService.js';
+import type { DocToolApi, ToolDefinition, ToolHandler } from './shared/types.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
+import type { EditOp } from '../../../core/services/docService.js';
 
 /**
- * Creates the 'cartridge_edit' MCP tool
- * Edits cartridge content using text replacement operations
+ * Creates the 'doc_edit' MCP tool
+ * Edits doc content using text replacement operations
  * Uses optimistic locking with hash verification
  *
- * @param services - Core services including cartridgeService
- * @returns CartridgeToolApi with definition and handler
+ * @param services - Core services including docService
+ * @returns docToolApi with definition and handler
  */
-const create = (services: CoreServices): CartridgeToolApi => {
+const create = (services: CoreServices): DocToolApi => {
     const definition: ToolDefinition = {
-        name: 'cartridge_edit',
-        description: 'Edit cartridge content using text replacement operations. Uses optimistic locking to prevent concurrent modifications.',
+        name: 'doc_edit',
+        description: 'Edit doc content using text replacement operations. Uses optimistic locking to prevent concurrent modifications.',
         inputSchema: {
-            identifier: z.string().describe('Cartridge ID (e.g., "crt001") or path (e.g., "auth/jwt-setup")'),
+            identifier: z.string().describe('doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),
             operation: z.discriminatedUnion('type', [
                 z.object({
@@ -52,41 +52,41 @@ const create = (services: CoreServices): CartridgeToolApi => {
         let editOp: EditOp;
 
         switch (operation.type) {
-            case 'replaceOnce':
-                editOp = {
-                    op: 'replaceOnce',
-                    oldText: operation.oldText,
-                    newText: operation.newText
-                };
-                break;
+        case 'replaceOnce':
+            editOp = {
+                op: 'replaceOnce',
+                oldText: operation.oldText,
+                newText: operation.newText
+            };
+            break;
 
-            case 'replaceAll':
-                editOp = {
-                    op: 'replaceAll',
-                    oldText: operation.oldText,
-                    newText: operation.newText
-                };
-                break;
+        case 'replaceAll':
+            editOp = {
+                op: 'replaceAll',
+                oldText: operation.oldText,
+                newText: operation.newText
+            };
+            break;
 
-            case 'replaceRegex':
-                editOp = {
-                    op: 'replaceRegex',
-                    pattern: operation.pattern,
-                    flags: operation.flags || '',
-                    replacement: operation.replacement
-                };
-                break;
+        case 'replaceRegex':
+            editOp = {
+                op: 'replaceRegex',
+                pattern: operation.pattern,
+                flags: operation.flags || '',
+                replacement: operation.replacement
+            };
+            break;
 
-            case 'replaceAllContent':
-                editOp = {
-                    op: 'replaceAllContent',
-                    content: operation.content
-                };
-                break;
+        case 'replaceAllContent':
+            editOp = {
+                op: 'replaceAllContent',
+                content: operation.content
+            };
+            break;
         }
 
         // Build address
-        const isId = CartridgeAddressResolver.isCartridgeId(identifier);
+        const isId = docAddressResolver.isdocId(identifier);
         const address = isId
             ? { kind: 'id' as const, scope: scope as 'project' | 'shared' | undefined, id: identifier }
             : { kind: 'path' as const, scope: scope as 'project' | 'shared' | undefined, path: identifier };
@@ -94,21 +94,22 @@ const create = (services: CoreServices): CartridgeToolApi => {
         // Get baseHash if not provided
         let effectiveBaseHash = baseHash;
         if (!effectiveBaseHash) {
-            const cartridge = await services.cartridgeService.read(address);
-            effectiveBaseHash = cartridge.hash;
-        } else {
+            const doc = await services.DocService.read(address);
+            effectiveBaseHash = doc.hash;
+        }
+        else {
             validateString(effectiveBaseHash, 'baseHash');
         }
 
         // Perform edit
-        const result = await services.cartridgeService.editLatest(
+        const result = await services.DocService.editLatest(
             address,
             effectiveBaseHash,
             [editOp]
         );
 
         // Build response
-        const message = `Edited cartridge: ${result.id}
+        const message = `Edited doc: ${result.id}
 Applied: ${result.appliedEdits} edit operation(s)
 New hash: ${result.newHash}`;
 
@@ -128,9 +129,9 @@ New hash: ${result.newHash}`;
     });
 };
 
-const CartridgeEditTool = Object.freeze({
+const docEditTool = Object.freeze({
     create
 });
 
-export default CartridgeEditTool;
-export type { CartridgeToolApi };
+export default docEditTool;
+export type { DocToolApi };

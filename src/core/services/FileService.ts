@@ -5,7 +5,7 @@ import { resolve, dirname, isAbsolute } from 'path';
 import pathSecurity from '../utils/pathSecurity.js';
 
 import type { Stats } from 'fs';
-import type { FsError } from '../utils/pathSecurity.js';
+import type { FsError as _FsError } from '../utils/pathSecurity.js';
 
 /**
  * Options for creating a FileService instance
@@ -199,7 +199,7 @@ interface FileServiceApi {
  * const fileService = FileService.create({
  *   boundaryDir: resolve(process.cwd(), '.data')
  * });
- * const { content, hash } = await fileService.readText('project/cartridges/example.md');
+ * const { content, hash } = await fileService.readText('project/docs/example.md');
  * ```
  */
 const create = (options: FileServiceOptions): FileServiceApi => {

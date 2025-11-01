@@ -1,6 +1,6 @@
 # SWIC CLI Usage Guide
 
-Quick reference for using the SWIC command-line interface to manage cartridges.
+Quick reference for using the SWIC command-line interface to manage docs.
 
 ## Installation
 
@@ -9,37 +9,37 @@ Quick reference for using the SWIC command-line interface to manage cartridges.
 export PATH="/path/to/swic:$PATH"
 
 # Or use directly
-./swic-mode cartridge list
+./swic-mode doc list
 ```
 
 ## Quick Start
 
 ```bash
-# List all cartridges (both scopes)
-swic cartridge list
+# List all docs (both scopes)
+swic doc list
 
-# Create a new cartridge
-swic cartridge create my-cartridge --interactive
+# Create a new doc
+swic doc create my-doc --interactive
 
-# Read a cartridge
-swic cartridge read my-cartridge
+# Read a doc
+swic doc read my-doc
 
-# Edit a cartridge
-swic cartridge edit my-cartridge --interactive
+# Edit a doc
+swic doc edit my-doc --interactive
 
-# Delete a cartridge
-swic cartridge delete my-cartridge
+# Delete a doc
+swic doc delete my-doc
 ```
 
 ## Command Reference
 
-### `swic cartridge create`
+### `swic doc create`
 
-Create a new cartridge (defaults to project scope).
+Create a new doc (defaults to project scope).
 
 **Syntax:**
 ```bash
-swic cartridge create <path> [options]
+swic doc create <path> [options]
 ```
 
 **Options:**
@@ -51,33 +51,33 @@ swic cartridge create <path> [options]
 **Examples:**
 ```bash
 # Interactive mode (opens in editor)
-swic cartridge create auth/jwt --interactive
+swic doc create auth/jwt --interactive
 
 # From stdin
-echo "# My Content" | swic cartridge create workflows/tdd
+echo "# My Content" | swic doc create workflows/tdd
 
 # From flag
-swic cartridge create utils/helper --content "# Helper utilities"
+swic doc create utils/helper --content "# Helper utilities"
 
 # In shared scope
-swic cartridge create workflows/tdd --scope shared --interactive
+swic doc create workflows/tdd --scope shared --interactive
 ```
 
 **Output:**
 ```
-crt001
-Created project cartridge: crt001 at auth/jwt
+doc001
+Created project doc: doc001 at auth/jwt
 ```
 
 ---
 
-### `swic cartridge read`
+### `swic doc read`
 
-Read a cartridge's content (auto-resolves scope).
+Read a doc's content (auto-resolves scope).
 
 **Syntax:**
 ```bash
-swic cartridge read <identifier> [options]
+swic doc read <identifier> [options]
 ```
 
 **Options:**
@@ -87,46 +87,46 @@ swic cartridge read <identifier> [options]
 **Examples:**
 ```bash
 # By path (checks project first, then shared)
-swic cartridge read auth/jwt
+swic doc read auth/jwt
 
 # By ID (scope inferred from prefix)
-swic cartridge read crt001      # Project
-swic cartridge read scrt005     # Shared
+swic doc read doc001      # Project
+swic doc read sdoc005     # Shared
 
 # Explicit scope
-swic cartridge read auth/jwt --scope shared
+swic doc read auth/jwt --scope shared
 
 # With metadata
-swic cartridge read crt001 --meta
+swic doc read doc001 --meta
 ```
 
 **Output (default):**
 ```
 # JWT Authentication Setup
 
-Content of the cartridge...
+Content of the doc...
 ```
 
 **Output (with --meta):**
 ```
-ID: crt001
+ID: doc001
 Path: auth/jwt
 Hash: a1b2c3d4...
 ---
 # JWT Authentication Setup
 
-Content of the cartridge...
+Content of the doc...
 ```
 
 ---
 
-### `swic cartridge edit`
+### `swic doc edit`
 
-Edit an existing cartridge (auto-resolves scope).
+Edit an existing doc (auto-resolves scope).
 
 **Syntax:**
 ```bash
-swic cartridge edit <identifier> [options]
+swic doc edit <identifier> [options]
 ```
 
 **Options:**
@@ -140,19 +140,19 @@ swic cartridge edit <identifier> [options]
 **Examples:**
 ```bash
 # Interactive mode
-swic cartridge edit auth/jwt --interactive
+swic doc edit auth/jwt --interactive
 
 # Replace first occurrence
-swic cartridge edit crt001 --old "JWT" --new "JSON Web Token"
+swic doc edit doc001 --old "JWT" --new "JSON Web Token"
 
 # Replace all occurrences
-swic cartridge edit auth/jwt --old "foo" --new "bar" --mode all
+swic doc edit auth/jwt --old "foo" --new "bar" --mode all
 
 # Regex replacement
-swic cartridge edit crt001 --old "v\d+\.\d+" --new "v2.0" --mode regex
+swic doc edit doc001 --old "v\d+\.\d+" --new "v2.0" --mode regex
 
 # With explicit hash (for concurrency)
-swic cartridge edit crt001 --interactive --hash a1b2c3d4...
+swic doc edit doc001 --interactive --hash a1b2c3d4...
 ```
 
 **Output:**
@@ -163,13 +163,13 @@ New hash: e5f6g7h8...
 
 ---
 
-### `swic cartridge delete`
+### `swic doc delete`
 
-Delete a cartridge (requires confirmation).
+Delete a doc (requires confirmation).
 
 **Syntax:**
 ```bash
-swic cartridge delete <identifier> [options]
+swic doc delete <identifier> [options]
 ```
 
 **Options:**
@@ -180,34 +180,34 @@ swic cartridge delete <identifier> [options]
 **Examples:**
 ```bash
 # With confirmation prompt
-swic cartridge delete auth/jwt
-# Prompt: "Delete project cartridge 'auth/jwt' (crt001)? [y/N]"
+swic doc delete auth/jwt
+# Prompt: "Delete project doc 'auth/jwt' (doc001)? [y/N]"
 
 # Skip confirmation
-swic cartridge delete auth/jwt --confirm
+swic doc delete auth/jwt --confirm
 
 # By ID
-swic cartridge delete crt001 --confirm
+swic doc delete doc001 --confirm
 
 # Explicit scope
-swic cartridge delete workflows/tdd --scope shared --confirm
+swic doc delete workflows/tdd --scope shared --confirm
 ```
 
 **Output:**
 ```
-crt001
-Deleted project cartridge: crt001 at auth/jwt
+doc001
+Deleted project doc: doc001 at auth/jwt
 ```
 
 ---
 
-### `swic cartridge list`
+### `swic doc list`
 
-List cartridges (both scopes by default).
+List docs (both scopes by default).
 
 **Syntax:**
 ```bash
-swic cartridge list [options]
+swic doc list [options]
 ```
 
 **Options:**
@@ -218,42 +218,42 @@ swic cartridge list [options]
 **Examples:**
 ```bash
 # List all (both scopes with override detection)
-swic cartridge list
+swic doc list
 
 # Project scope only
-swic cartridge list --scope project
+swic doc list --scope project
 
 # With synopsis
-swic cartridge list --full
+swic doc list --full
 
 # Filter by prefix
-swic cartridge list --prefix auth/
+swic doc list --prefix auth/
 
 # Combine filters
-swic cartridge list --scope shared --prefix workflows/
+swic doc list --scope shared --prefix workflows/
 ```
 
 **Output (default):**
 ```
 ID       NAME              SCOPE     OVERRIDE
-crt001   auth/jwt          project   overrides
-scrt001  auth/jwt          shared    overridden
-crt002   local/feature     project   -
-scrt002  utils/helper      shared    -
+doc001   auth/jwt          project   overrides
+sdoc001  auth/jwt          shared    overridden
+doc002   local/feature     project   -
+sdoc002  utils/helper      shared    -
 ```
 
 **Output (with --full):**
 ```
 ID       NAME              SCOPE     OVERRIDE    SYNOPSIS
-crt001   auth/jwt          project   overrides   JWT authentication setup
-scrt001  auth/jwt          shared    overridden  Shared JWT config
-crt002   local/feature     project   -           Local feature impl
-scrt002  utils/helper      shared    -           Helper utilities
+doc001   auth/jwt          project   overrides   JWT authentication setup
+sdoc001  auth/jwt          shared    overridden  Shared JWT config
+doc002   local/feature     project   -           Local feature impl
+sdoc002  utils/helper      shared    -           Helper utilities
 ```
 
 **Color Coding:**
-- **Cyan**: Project cartridges (ID and SCOPE columns)
-- **Green**: Shared cartridges (ID and SCOPE columns)
+- **Cyan**: Project docs (ID and SCOPE columns)
+- **Green**: Shared docs (ID and SCOPE columns)
 
 ---
 
@@ -263,13 +263,13 @@ When scope is omitted, SWIC resolves it intelligently:
 
 ### For Create Operations
 ```bash
-swic cartridge create my-new-cartridge
+swic doc create my-new-doc
 # Always creates in project scope
 ```
 
 ### For Read/Edit/Delete Operations
 ```bash
-swic cartridge read my-cartridge
+swic doc read my-doc
 # 1. Checks project scope first
 # 2. Falls back to shared scope if not found in project
 # 3. Fails if not found in either scope
@@ -277,48 +277,48 @@ swic cartridge read my-cartridge
 
 ### For ID-Based Operations
 ```bash
-swic cartridge read crt001    # Project (from 'crt' prefix)
-swic cartridge read scrt005   # Shared (from 'scrt' prefix)
+swic doc read doc001    # Project (from 'doc' prefix)
+swic doc read sdoc005   # Shared (from 'sdoc' prefix)
 # Scope is unambiguous from ID prefix
 ```
 
 ### For List Operations
 ```bash
-swic cartridge list
+swic doc list
 # Lists both scopes with override detection
 ```
 
 ## Override Behavior
 
-When a project cartridge and shared cartridge have the same path:
+When a project doc and shared doc have the same path:
 
 ```bash
 # Both scopes have "auth/jwt"
-swic cartridge list
-# crt005   auth/jwt   project   overrides
-# scrt010  auth/jwt   shared    overridden
+swic doc list
+# doc005   auth/jwt   project   overrides
+# sdoc010  auth/jwt   shared    overridden
 
 # Without scope, operates on project version
-swic cartridge read auth/jwt          # Reads project version (crt005)
-swic cartridge edit auth/jwt --interactive  # Edits project version
-swic cartridge delete auth/jwt --confirm    # Deletes project version
+swic doc read auth/jwt          # Reads project version (doc005)
+swic doc edit auth/jwt --interactive  # Edits project version
+swic doc delete auth/jwt --confirm    # Deletes project version
 
 # To access shared version, use explicit scope or ID
-swic cartridge read auth/jwt --scope shared  # Reads shared version
-swic cartridge read scrt010                  # Reads shared version
+swic doc read auth/jwt --scope shared  # Reads shared version
+swic doc read sdoc010                  # Reads shared version
 ```
 
 ## Front Matter
 
-Cartridges can include YAML front matter:
+docs can include YAML front matter:
 
 ```yaml
 ---
 audience: developers
-synopsis: Brief description of cartridge purpose
+synopsis: Brief description of doc purpose
 ---
 
-# Cartridge Content
+# doc Content
 
 Content goes here...
 ```
@@ -334,69 +334,69 @@ Front matter is:
 ### Use IDs for Automation
 ```bash
 # IDs are stable and unambiguous
-crt_id=$(swic cartridge create my-feature --content "...")
-swic cartridge read "$crt_id"
-swic cartridge delete "$crt_id" --confirm
+doc_id=$(swic doc create my-feature --content "...")
+swic doc read "$doc_id"
+swic doc delete "$doc_id" --confirm
 ```
 
 ### Use Paths for Interactive Work
 ```bash
 # Paths are human-readable
-swic cartridge create auth/jwt --interactive
-swic cartridge read auth/jwt
-swic cartridge edit auth/jwt --interactive
+swic doc create auth/jwt --interactive
+swic doc read auth/jwt
+swic doc edit auth/jwt --interactive
 ```
 
 ### Check List Before Operations
 ```bash
 # See what exists and where
-swic cartridge list
-swic cartridge list --prefix auth/
+swic doc list
+swic doc list --prefix auth/
 ```
 
 ### Use Confirmation Prompts
 ```bash
 # Let SWIC show you what will be deleted
-swic cartridge delete auth/jwt
-# Shows: "Delete project cartridge 'auth/jwt' (crt001)? [y/N]"
+swic doc delete auth/jwt
+# Shows: "Delete project doc 'auth/jwt' (doc001)? [y/N]"
 ```
 
 ### Organize with Prefixes
 ```bash
-# Group related cartridges
-swic cartridge create auth/jwt
-swic cartridge create auth/oauth
-swic cartridge create workflows/tdd
-swic cartridge create workflows/review
+# Group related docs
+swic doc create auth/jwt
+swic doc create auth/oauth
+swic doc create workflows/tdd
+swic doc create workflows/review
 
 # Filter by group
-swic cartridge list --prefix auth/
-swic cartridge list --prefix workflows/
+swic doc list --prefix auth/
+swic doc list --prefix workflows/
 ```
 
 ## Troubleshooting
 
-### "Invalid cartridge ID format"
-- Ensure IDs match `crt###` or `scrt###` format
-- For shared cartridges, use `scrt###` not `crt###`
+### "Invalid doc ID format"
+- Ensure IDs match `doc###` or `sdoc###` format
+- For shared docs, use `sdoc###` not `doc###`
 
-### "No cartridge found"
-- Check both scopes: `swic cartridge list`
+### "No doc found"
+- Check both scopes: `swic doc list`
 - Try explicit scope: `--scope shared`
 - Verify path is correct (paths are case-sensitive)
 
 ### "Hash mismatch" during edit
-- Cartridge was modified since you read it
-- Re-read to get latest hash: `swic cartridge read crt001 --meta`
+- doc was modified since you read it
+- Re-read to get latest hash: `swic doc read doc001 --meta`
 - Use latest hash in edit command
 
 ### Changes not visible
 - Ensure you're checking the correct scope
-- Use `swic cartridge list` to see which scope has the cartridge
-- Remember: project cartridges override shared ones
+- Use `swic doc list` to see which scope has the doc
+- Remember: project docs override shared ones
 
 ## See Also
 
 - **Migration Guide**: `MIGRATION-SCOPE-OPTIONAL.md` - Upgrade guide for scope-optional refactor
-- **Spec**: `.swic/cartridges/swic/spec/cartridges.md` - Detailed operation specifications
-- **Operations**: `.swic/cartridges/operations.md` - Build and deployment guide
+- **Spec**: `.swic/docs/swic/spec/docs.md` - Detailed operation specifications
+- **Operations**: `.swic/docs/operations.md` - Build and deployment guide

@@ -1,24 +1,24 @@
 import { z } from 'zod';
 import type { CoreServices } from '../../../core/Core.js';
-import type { CartridgeToolApi, ToolDefinition, ToolHandler, ToolResponse } from './shared/types.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+import type { DocToolApi, ToolDefinition, ToolHandler } from './shared/types.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
 
 /**
- * Creates the 'cartridge_move' MCP tool
- * Moves or renames a cartridge to a new path
+ * Creates the 'doc_move' MCP tool
+ * Moves or renames a doc to a new path
  * Generates a new ID (even for same-scope moves)
  * Supports cross-scope moves with explicit destinationScope parameter
  *
- * @param services - Core services including cartridgeService
- * @returns CartridgeToolApi with definition and handler
+ * @param services - Core services including docService
+ * @returns docToolApi with definition and handler
  */
-const create = (services: CoreServices): CartridgeToolApi => {
+const create = (services: CoreServices): DocToolApi => {
     const definition: ToolDefinition = {
-        name: 'cartridge_move',
-        description: 'Move or rename a cartridge to a new path. Generates a new ID. Supports cross-scope moves.',
+        name: 'doc_move',
+        description: 'Move or rename a doc to a new path. Generates a new ID. Supports cross-scope moves.',
         inputSchema: {
-            source: z.string().describe('Source cartridge ID (e.g., "crt001") or path (e.g., "auth/jwt-setup")'),
-            destination: z.string().describe('Destination path (not ID) for the cartridge'),
+            source: z.string().describe('Source doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
+            destination: z.string().describe('Destination path (not ID) for the doc'),
             sourceScope: z.enum(['project', 'shared']).optional().describe('Optional. Source scope. Auto-resolves if omitted.'),
             destinationScope: z.enum(['project', 'shared']).optional().describe('Optional. Destination scope. Defaults to source scope if omitted.')
         }
@@ -27,16 +27,16 @@ const create = (services: CoreServices): CartridgeToolApi => {
     const handler: ToolHandler = async (args) => {
         const { source, destination, sourceScope, destinationScope } = args;
 
-        // Read source cartridge
-        const isId = CartridgeAddressResolver.isCartridgeId(source);
+        // Read source doc
+        const isId = docAddressResolver.isdocId(source);
         const sourceAddress = isId
             ? { kind: 'id' as const, scope: sourceScope as 'project' | 'shared' | undefined, id: source }
             : { kind: 'path' as const, scope: sourceScope as 'project' | 'shared' | undefined, path: source };
 
-        const sourceCart = await services.cartridgeService.read(sourceAddress);
+        const sourceCart = await services.DocService.read(sourceAddress);
 
         // Determine destination scope
-        const resolvedSourceScope = sourceCart.id.startsWith('scrt') ? 'shared' : 'project';
+        const resolvedSourceScope = sourceCart.id.startsWith('sdoc') ? 'shared' : 'project';
         const destScope = (destinationScope as 'project' | 'shared' | undefined) || resolvedSourceScope;
         const isCrossScope = resolvedSourceScope !== destScope;
 
@@ -47,16 +47,17 @@ const create = (services: CoreServices): CartridgeToolApi => {
 
         // Check if destination exists
         try {
-            await services.cartridgeService.read({
+            await services.DocService.read({
                 kind: 'path',
                 scope: destScope,
                 path: destination
             });
             // If read succeeds, destination exists
             throw new Error(`Destination already exists: ${destScope} ${destination}`);
-        } catch (err: any) {
+        }
+        catch (err: any) {
             // Expected: destination doesn't exist
-            const isNotFound = err.message.includes('No cartridge') ||
+            const isNotFound = err.message.includes('No doc') ||
                                err.message.includes('not found') ||
                                err.message.includes('File or directory');
             if (!isNotFound) {
@@ -66,7 +67,7 @@ const create = (services: CoreServices): CartridgeToolApi => {
         }
 
         // Create at destination
-        const newCart = await services.cartridgeService.create({
+        const newCart = await services.DocService.create({
             address: {
                 kind: 'path',
                 path: destination,
@@ -76,7 +77,7 @@ const create = (services: CoreServices): CartridgeToolApi => {
         });
 
         // Delete source
-        await services.cartridgeService.deleteLatest(
+        await services.DocService.deleteLatest(
             sourceAddress,
             sourceCart.hash
         );
@@ -90,8 +91,8 @@ const create = (services: CoreServices): CartridgeToolApi => {
             oldScope: resolvedSourceScope,
             newScope: destScope,
             message: isCrossScope
-                ? `Moved cartridge across scopes from ${resolvedSourceScope} ${sourceCart.path} (${sourceCart.id}) to ${destScope} ${destination} (new ID: ${newCart.id})`
-                : `Moved cartridge from ${sourceCart.path} (${sourceCart.id}) to ${destination} (new ID: ${newCart.id})`
+                ? `Moved doc across scopes from ${resolvedSourceScope} ${sourceCart.path} (${sourceCart.id}) to ${destScope} ${destination} (new ID: ${newCart.id})`
+                : `Moved doc from ${sourceCart.path} (${sourceCart.id}) to ${destination} (new ID: ${newCart.id})`
         };
 
         return {
@@ -110,9 +111,9 @@ const create = (services: CoreServices): CartridgeToolApi => {
     });
 };
 
-const CartridgeMoveTool = Object.freeze({
+const docMoveTool = Object.freeze({
     create
 });
 
-export default CartridgeMoveTool;
-export type { CartridgeToolApi };
+export default docMoveTool;
+export type { DocToolApi };

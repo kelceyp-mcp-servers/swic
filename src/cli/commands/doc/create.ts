@@ -7,13 +7,13 @@ import { join } from 'path';
 
 const create = (services: CoreServices) => {
     return createCommand('create')
-        .summary('Create a new cartridge (defaults to project scope)')
+        .summary('Create a new doc (defaults to project scope)')
         .param((p) => p
             .name('path')
             .type('string')
             .positional(0)
             .required()
-            .prompt('Enter cartridge path (e.g., "auth/jwt-setup.md")')
+            .prompt('Enter doc path (e.g., "auth/jwt-setup.md")')
         )
         .param((p) => p
             .name('scope')
@@ -45,7 +45,7 @@ const create = (services: CoreServices) => {
             if (interactive) {
                 // Interactive mode: open editor with empty file
                 const editor = process.env.EDITOR || 'vi';
-                const tmpFile = join(tmpdir(), `cartridge-create-${Date.now()}.md`);
+                const tmpFile = join(tmpdir(), `doc-create-${Date.now()}.md`);
 
                 try {
                     // Create empty temp file
@@ -80,7 +80,7 @@ const create = (services: CoreServices) => {
             }
 
             // Scope is optional, defaults to 'project' in the service
-            const result = await services.cartridgeService.create({
+            const result = await services.DocService.create({
                 address: {
                     kind: 'path',
                     scope: scope as 'project' | 'shared' | undefined,
@@ -91,7 +91,7 @@ const create = (services: CoreServices) => {
 
             const effectiveScope = scope || 'project';
             ctx.stdio.stdout.write(`${result.id}\n`);
-            ctx.logger.info(`Created ${effectiveScope} cartridge: ${result.id} at ${path}`);
+            ctx.logger.info(`Created ${effectiveScope} doc: ${result.id} at ${path}`);
         })
         .onError({ exitCode: 1, showStack: 'auto' })
         .build();

@@ -192,49 +192,49 @@ const mapOsError = (error: any, context?: { path?: string; resolved?: string; op
         : '';
 
     switch (code) {
-        case 'ENOENT':
-            return fsError(
-                'NOT_FOUND',
-                `File or directory not found${pathStr ? `: ${pathStr}` : ''}`,
-                { ...context, originalCode: code }
-            );
+    case 'ENOENT':
+        return fsError(
+            'NOT_FOUND',
+            `File or directory not found${pathStr ? `: ${pathStr}` : ''}`,
+            { ...context, originalCode: code }
+        );
 
-        case 'ENOTEMPTY':
-            return fsError(
-                'DIRECTORY_NOT_EMPTY',
-                `Directory not empty${pathStr ? `: ${pathStr}` : ''}`,
-                { ...context, originalCode: code }
-            );
+    case 'ENOTEMPTY':
+        return fsError(
+            'DIRECTORY_NOT_EMPTY',
+            `Directory not empty${pathStr ? `: ${pathStr}` : ''}`,
+            { ...context, originalCode: code }
+        );
 
-        case 'ENOTDIR':
-        case 'EISDIR':
-            return fsError(
-                'VALIDATION_ERROR',
-                `Invalid path type${pathStr ? `: ${pathStr}` : ''}`,
-                { ...context, originalCode: code, reason: code === 'ENOTDIR' ? 'not a directory' : 'is a directory' }
-            );
+    case 'ENOTDIR':
+    case 'EISDIR':
+        return fsError(
+            'VALIDATION_ERROR',
+            `Invalid path type${pathStr ? `: ${pathStr}` : ''}`,
+            { ...context, originalCode: code, reason: code === 'ENOTDIR' ? 'not a directory' : 'is a directory' }
+        );
 
-        case 'EACCES':
-        case 'EPERM':
-            return fsError(
-                'FS_ERROR',
-                `Permission denied${pathStr ? `: ${pathStr}` : ''}`,
-                { ...context, originalCode: code }
-            );
+    case 'EACCES':
+    case 'EPERM':
+        return fsError(
+            'FS_ERROR',
+            `Permission denied${pathStr ? `: ${pathStr}` : ''}`,
+            { ...context, originalCode: code }
+        );
 
-        case 'EBUSY':
-            return fsError(
-                'FS_ERROR',
-                `Resource busy or locked${pathStr ? `: ${pathStr}` : ''}`,
-                { ...context, originalCode: code }
-            );
+    case 'EBUSY':
+        return fsError(
+            'FS_ERROR',
+            `Resource busy or locked${pathStr ? `: ${pathStr}` : ''}`,
+            { ...context, originalCode: code }
+        );
 
-        default:
-            // Re-throw unrecognized errors with context
-            if (context) {
-                error.context = context;
-            }
-            return error;
+    default:
+        // Re-throw unrecognized errors with context
+        if (context) {
+            error.context = context;
+        }
+        return error;
     }
 };
 

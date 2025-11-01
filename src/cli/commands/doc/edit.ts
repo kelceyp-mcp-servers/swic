@@ -1,22 +1,22 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
 import { execSync } from 'child_process';
 import { writeFileSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
 /**
- * Creates the 'edit' command for the cartridge CLI group.
- * Edits a cartridge using text replacement or interactive editor.
+ * Creates the 'edit' command for the doc CLI group.
+ * Edits a doc using text replacement or interactive editor.
  * Scope is optional - checks project first, then shared (or inferred from ID).
  *
- * @param services - Core services including cartridgeService
+ * @param services - Core services including docService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('edit')
-        .summary('Edit a cartridge (auto-resolves scope)')
+        .summary('Edit a doc (auto-resolves scope)')
         .param((p) => p
             .name('identifier')
             .type('string')
@@ -69,26 +69,26 @@ const create = (services: CoreServices) => {
             const { identifier, scope, interactive, old, new: newText, mode, hash } = ctx.params;
 
             // Auto-detect if identifier is an ID or path using new resolver
-            const isId = CartridgeAddressResolver.isCartridgeId(identifier);
+            const isId = docAddressResolver.isdocId(identifier);
 
-            // Read cartridge to get current content and hash
-            const cartridge = await services.cartridgeService.read(
+            // Read doc to get current content and hash
+            const doc = await services.DocService.read(
                 isId
                     ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
                     : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }
             );
 
-            const baseHash = hash || cartridge.hash;
+            const baseHash = hash || doc.hash;
             let edits: Array<any> = [];
 
             if (interactive) {
                 // Interactive mode: open in editor
                 const editor = process.env.EDITOR || 'vi';
-                const tmpFile = join(tmpdir(), `cartridge-edit-${Date.now()}.md`);
+                const tmpFile = join(tmpdir(), `doc-edit-${Date.now()}.md`);
 
                 try {
                     // Write current content to temp file
-                    writeFileSync(tmpFile, cartridge.content);
+                    writeFileSync(tmpFile, doc.content);
 
                     // Open in editor
                     execSync(`${editor} ${tmpFile}`, { stdio: 'inherit' });
@@ -134,7 +134,7 @@ const create = (services: CoreServices) => {
             }
 
             // Apply edits
-            const result = await services.cartridgeService.editLatest(
+            const result = await services.DocService.editLatest(
                 (isId
                     ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
                     : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }) as any,
@@ -144,7 +144,7 @@ const create = (services: CoreServices) => {
 
             // Output new hash
             ctx.stdio.stdout.write(`${result.newHash}\n`);
-            ctx.logger.info(`Applied ${result.applied} edit(s) to cartridge: ${cartridge.id}`);
+            ctx.logger.info(`Applied ${result.applied} edit(s) to doc: ${doc.id}`);
         })
         .onError({ exitCode: 1, showStack: 'auto' })
         .build();

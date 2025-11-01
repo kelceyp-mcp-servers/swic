@@ -57,7 +57,7 @@ const create = (options: ServerOptions): ServerApi => {
                 tool.definition.name,
                 {
                     description: tool.definition.description,
-                    inputSchema: tool.definition.inputSchema,
+                    inputSchema: tool.definition.inputSchema
                 },
                 async (args) => tool.handler(args, services)
             );
@@ -81,16 +81,12 @@ const create = (options: ServerOptions): ServerApi => {
  */
 const main = async (): Promise<void> => {
     const { default: Core } = await import('../core/Core.js');
-    const { default: FindProjectRoot } = await import('../core/utils/findProjectRoot.js');
-    const { resolve } = await import('path');
-    const { homedir } = await import('os');
 
-    const projectBoundaryDir = FindProjectRoot.findProjectRoot();
-    const sharedBoundaryDir = resolve(homedir(), '.swic');
+    const { projectDataDir, sharedDataDir } = Core.lazilyGetDataDirs();
 
     const services = Core.createServices({
-        projectBoundaryDir,
-        sharedBoundaryDir
+        projectBoundaryDir: projectDataDir,
+        sharedBoundaryDir: sharedDataDir
     });
 
     const server = create({ services });

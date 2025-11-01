@@ -36,10 +36,10 @@ export interface ToolHandler {
 }
 
 /**
- * Cartridge Tool API
- * Combines definition and handler for a cartridge tool
+ * doc Tool API
+ * Combines definition and handler for a doc tool
  */
-export interface CartridgeToolApi {
+export interface DocToolApi {
     definition: ToolDefinition;
     handler: ToolHandler;
 }

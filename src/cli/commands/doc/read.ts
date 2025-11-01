@@ -1,20 +1,20 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import CartridgeAddressResolver from '../../../core/utils/CartridgeAddressResolver.js';
+import docAddressResolver from '../../../core/utils/docAddressResolver.js';
 
 /**
- * Creates the 'read' command for the cartridge CLI group.
- * Reads and outputs one or more cartridges' content.
- * Accepts comma-separated identifiers (e.g., "crt001,crt002,crt003").
- * Multiple cartridges are separated by empty lines in output.
+ * Creates the 'read' command for the doc CLI group.
+ * Reads and outputs one or more docs' content.
+ * Accepts comma-separated identifiers (e.g., "doc001,doc002,doc003").
+ * Multiple docs are separated by empty lines in output.
  * Scope is optional - checks project first, then shared (or inferred from ID).
  *
- * @param services - Core services including cartridgeService
+ * @param services - Core services including docService
  * @returns Built CLI command
  */
 const create = (services: CoreServices) => {
     return createCommand('read')
-        .summary('Read cartridge(s) - comma-separated (auto-resolves scope)')
+        .summary('Read doc(s) - comma-separated (auto-resolves scope)')
         .param((p) => p
             .name('identifier')
             .type('string')
@@ -53,15 +53,15 @@ const create = (services: CoreServices) => {
             // Validation phase: basic format check
             for (const id of identifiers) {
                 if (!id || id.length === 0) {
-                    throw new Error(`Invalid identifier: empty string`);
+                    throw new Error('Invalid identifier: empty string');
                 }
             }
 
-            // Read phase: read all cartridges in parallel
-            const cartridges = await Promise.all(
+            // Read phase: read all docs in parallel
+            const docs = await Promise.all(
                 identifiers.map(async (id) => {
-                    const isId = CartridgeAddressResolver.isCartridgeId(id);
-                    return await services.cartridgeService.read(
+                    const isId = docAddressResolver.isdocId(id);
+                    return await services.DocService.read(
                         isId
                             ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id }
                             : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }
@@ -69,28 +69,28 @@ const create = (services: CoreServices) => {
                 })
             );
 
-            // Output phase: write each cartridge with empty line separator
-            for (let i = 0; i < cartridges.length; i++) {
-                const cartridge = cartridges[i];
+            // Output phase: write each doc with empty line separator
+            for (let i = 0; i < docs.length; i++) {
+                const doc = docs[i];
 
                 // If meta flag is set, output metadata first
                 if (meta) {
-                    ctx.stdio.stdout.write(`ID: ${cartridge.id}\n`);
-                    ctx.stdio.stdout.write(`Path: ${cartridge.path}\n`);
-                    ctx.stdio.stdout.write(`Hash: ${cartridge.hash}\n`);
-                    ctx.stdio.stdout.write(`---\n`);
+                    ctx.stdio.stdout.write(`ID: ${doc.id}\n`);
+                    ctx.stdio.stdout.write(`Path: ${doc.path}\n`);
+                    ctx.stdio.stdout.write(`Hash: ${doc.hash}\n`);
+                    ctx.stdio.stdout.write('---\n');
                 }
 
                 // Output the content
-                ctx.stdio.stdout.write(cartridge.content);
+                ctx.stdio.stdout.write(doc.content);
 
                 // Add trailing newline if content doesn't end with one
-                if (!cartridge.content.endsWith('\n')) {
+                if (!doc.content.endsWith('\n')) {
                     ctx.stdio.stdout.write('\n');
                 }
 
-                // Add empty line separator between cartridges (but not after the last one)
-                if (i < cartridges.length - 1) {
+                // Add empty line separator between docs (but not after the last one)
+                if (i < docs.length - 1) {
                     ctx.stdio.stdout.write('\n');
                 }
             }

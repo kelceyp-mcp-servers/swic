@@ -46,16 +46,16 @@ interface AddressResolverApi {
  *
  * @example
  * ```typescript
- * const cartridgeAddress = AddressResolver.create({
- *     idPattern: /^crt\d{3,}$/,
- *     entityName: 'cartridge'
+ * const docAddress = AddressResolver.create({
+ *     idPattern: /^doc\d{3,}$/,
+ *     entityName: 'doc'
  * });
  *
- * cartridgeAddress.isId('crt001');  // true
- * cartridgeAddress.isId('auth/jwt'); // false
+ * docAddress.isId('doc001');  // true
+ * docAddress.isId('auth/jwt'); // false
  *
- * const result = cartridgeAddress.resolve('crt001');
- * // { kind: 'id', value: 'crt001' }
+ * const result = docAddress.resolve('doc001');
+ * // { kind: 'id', value: 'doc001' }
  * ```
  */
 const create = (options: AddressResolverOptions): AddressResolverApi => {
@@ -122,9 +122,9 @@ const create = (options: AddressResolverOptions): AddressResolverApi => {
  * Create one instance per entity type:
  *
  * ```typescript
- * const cartridgeAddress = AddressResolver.create({
- *     idPattern: /^crt\d{3,}$/,
- *     entityName: 'cartridge'
+ * const docAddress = AddressResolver.create({
+ *     idPattern: /^doc\d{3,}$/,
+ *     entityName: 'doc'
  * });
  * ```
  *
@@ -132,12 +132,12 @@ const create = (options: AddressResolverOptions): AddressResolverApi => {
  *
  * ```typescript
  * // Prevent ID-like paths
- * if (cartridgeAddress.isId(name)) {
+ * if (docAddress.isId(name)) {
  *     throw new Error('Cannot use ID format as name');
  * }
  *
  * // Auto-detect identifier type
- * const { kind, value } = cartridgeAddress.resolve(identifier);
+ * const { kind, value } = docAddress.resolve(identifier);
  * ```
  *
  * @module AddressResolver

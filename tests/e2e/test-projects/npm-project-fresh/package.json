@@ -1,0 +1,10 @@
+{
+  "name": "swic-test-fresh",
+  "version": "1.0.0",
+  "description": "Test project for fresh SWIC installation",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bash test-script.sh"
+  }
+}
