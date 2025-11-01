@@ -53,6 +53,7 @@ console.log('Building CLI...');
 const proc = spawn('bun', [
     'build',
     'src/cli/cli.ts',
+    '--banner:js=#!/usr/bin/env node',
     '--outdir', 'dist/cli',
     '--target', 'node',
     '--minify',

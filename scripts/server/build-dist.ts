@@ -60,6 +60,7 @@ console.log('Building server...');
 const proc = spawn('bun', [
     'build',
     'src/server/Server.ts',
+    '--banner:js=#!/usr/bin/env node',
     '--outdir', 'dist/server',
     '--target', 'bun',
     '--minify',

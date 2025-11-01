@@ -39,7 +39,7 @@ if (process.argv[2] === '--usage') {
 }
 
 import { spawn } from 'child_process';
-import { statSync, rmSync } from 'fs';
+import { statSync, rmSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 /** Project root directory */
@@ -65,9 +65,23 @@ function getFileSizeKB(filePath: string): string {
     try {
         const stats = statSync(filePath);
         return `${(stats.size / 1024).toFixed(1)} KB`;
-    } catch {
+    }
+    catch {
         return 'not found';
     }
+}
+
+/**
+ * Fix shebang in a file - replace first line with #!/usr/bin/env node
+ */
+function fixShebang(filePath: string): void {
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+
+    // Replace first line with correct shebang
+    lines[0] = '#!/usr/bin/env node';
+
+    writeFileSync(filePath, lines.join('\n'), 'utf-8');
 }
 
 /**
@@ -86,6 +100,7 @@ async function buildAll() {
     const serverCode = await runCommand('bun', [
         'build',
         'src/server/Server.ts',
+        '--banner:js=#!/usr/bin/env node',
         '--outdir', 'dist/server',
         '--target', 'bun',
         '--minify',
@@ -103,8 +118,9 @@ async function buildAll() {
     const cliCode = await runCommand('bun', [
         'build',
         'src/cli/cli.ts',
+        '--banner:js=#!/usr/bin/env node',
         '--outdir', 'dist/cli',
-        '--target', 'bun',
+        '--target', 'node',
         '--minify',
         '--no-sourcemap'
     ]);
@@ -115,9 +131,16 @@ async function buildAll() {
     }
     console.log('');
 
-    // Validate and report
+    // Fix shebangs (bun auto-generates incorrect ones)
+    console.log('Fixing shebangs...');
     const serverPath = join(projectRoot, 'dist/server/Server.js');
     const cliPath = join(projectRoot, 'dist/cli/cli.js');
+
+    fixShebang(serverPath);
+    fixShebang(cliPath);
+    console.log('');
+
+    // Validate and report
 
     const serverSize = getFileSizeKB(serverPath);
     const cliSize = getFileSizeKB(cliPath);
