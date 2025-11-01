@@ -15,6 +15,7 @@ abstract: desired behaviours interacting with the user
 6. **No fallbacks or defaults** - They just mask the fact we didn't provide the right thing. Fail fast.
 7. **Measure twice and cut once** - Shift left. Ask questions. Do designs.
 8. **Don't run ahead of the user** - Work with the user. Don't get ahead of them.
+9. **No time estimates** - They're always wrong and create false expectations. Just do the work.
 
 ## Cartridges
 
