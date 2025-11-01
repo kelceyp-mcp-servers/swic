@@ -8,20 +8,39 @@ set -e  # Note: we handle failures ourselves, don't exit on first error
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# Install bun if not already available
-if ! command -v bun &> /dev/null; then
-    echo "Installing bun..."
-    curl -fsSL https://bun.sh/install | bash
-    # Source the bashrc to get bun in PATH
-    source "$HOME/.bashrc"
-    echo "✅ Bun installed successfully"
-else
-    echo "✅ Bun already installed"
+# ========================================
+# SAFETY CHECK: Verify running in container
+# ========================================
+if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
+    echo ""
+    echo "========================================="
+    echo "⛔ SAFETY CHECK FAILED ⛔"
+    echo "========================================="
+    echo ""
+    echo "This script orchestrates DESTRUCTIVE test scripts that:"
+    echo "  - Delete ~/.swic directory"
+    echo "  - Delete .swic directories"
+    echo "  - Remove node_modules"
+    echo ""
+    echo "It MUST only run inside Docker containers."
+    echo ""
+    echo "Current environment is NOT a container."
+    echo ""
+    echo "To run E2E tests safely:"
+    echo "  bash tests/e2e/run-e2e-tests.sh"
+    echo ""
+    echo "This will run tests in an isolated Docker container."
+    echo "========================================="
+    echo ""
+    exit 1
 fi
 
-# Ensure bun is in PATH for all child processes
+echo "✓ Container environment detected - safe to proceed"
+echo ""
+
+# Bun is pre-installed in the image
 export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
+export PATH="$BUN_INSTALL/bin:/usr/local/bin:$PATH"
 
 FAILED=0
 PASSED=0

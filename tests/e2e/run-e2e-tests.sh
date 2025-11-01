@@ -25,22 +25,21 @@ fi
 
 echo -e "${GREEN}✓${NC} Docker is installed"
 
-# Check if docker-claude image exists
-if ! docker image inspect docker-claude:latest &> /dev/null; then
-    echo -e "${YELLOW}⚠${NC}  docker-claude image not found"
-    echo "Building docker-claude image..."
+# Check if swic-e2e-tests image exists
+if ! docker image inspect swic-e2e-tests:latest &> /dev/null; then
+    echo -e "${YELLOW}⚠${NC}  swic-e2e-tests image not found"
+    echo "Building swic-e2e-tests image..."
 
-    # Build the image using the build script
-    cd "$PROJECT_ROOT"
-    bash scripts/docker-claude/build-image.sh
+    # Build the test image using the build script
+    bash "$SCRIPT_DIR/build-test-image.sh"
 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ Failed to build docker-claude image${NC}"
+        echo -e "${RED}❌ Failed to build swic-e2e-tests image${NC}"
         exit 1
     fi
 fi
 
-echo -e "${GREEN}✓${NC} docker-claude image found"
+echo -e "${GREEN}✓${NC} swic-e2e-tests image found"
 
 # Load environment variables from .env
 if [ -f "$PROJECT_ROOT/.env" ]; then
@@ -70,23 +69,11 @@ fi
 # Run tests in container
 echo -e "\n${GREEN}Running tests in container...${NC}\n"
 
-# Create a container (don't run yet)
-CONTAINER_ID=$(docker create $ENV_ARGS docker-claude:latest bash -c "cd /home/node/test-projects && bash run-e2e-tests.sh")
+# Run the test image directly (scripts and bun already baked in)
+# No volume mounts - complete isolation from host filesystem
+docker run --rm $ENV_ARGS swic-e2e-tests:latest
 
-# Copy test-projects into the container
-docker cp "$SCRIPT_DIR/test-projects" "$CONTAINER_ID:/home/node/"
-
-# Fix ownership (files are copied as root, but container runs as node user)
-docker start "$CONTAINER_ID" > /dev/null
-docker exec -u root "$CONTAINER_ID" chown -R node:node /home/node/test-projects
-docker stop "$CONTAINER_ID" > /dev/null
-
-# Now start the container and wait for it to finish
-docker start -a "$CONTAINER_ID"
 EXIT_CODE=$?
-
-# Clean up the container
-docker rm "$CONTAINER_ID" > /dev/null
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo -e "\n${GREEN}✅ Docker E2E tests passed${NC}"

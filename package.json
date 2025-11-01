@@ -19,6 +19,8 @@
     "build": "bun run scripts/build-all.ts",
     "prepublishOnly": "bun run build",
     "test:e2e": "bash tests/e2e/run-e2e-tests.sh",
+    "test:e2e:build": "bash tests/e2e/build-test-image.sh",
+    "test:e2e:rebuild": "bash tests/e2e/build-test-image.sh && bash tests/e2e/run-e2e-tests.sh",
     "lint": "eslint src scripts archive --ext .ts",
     "lint:fix": "eslint src scripts archive --ext .ts --fix"
   },

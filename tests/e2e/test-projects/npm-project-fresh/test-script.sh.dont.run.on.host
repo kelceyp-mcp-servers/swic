@@ -1,13 +1,52 @@
 #!/usr/bin/env bash
 
+# ⚠️  DESTRUCTIVE TEST SCRIPT - CONTAINER ONLY ⚠️
+#
 # E2E Test: Fresh NPM Installation
 # Tests SWIC installation from scratch, CLI commands, and lazy folder creation
 #
-# ⚠️  WARNING: This script deletes ~/.swic and .swic directories!
-# ⚠️  ONLY run inside Docker containers - NEVER on host machine!
-# ⚠️  Use: bun run test:e2e (which runs in Docker)
+# This script deletes ~/.swic and .swic directories!
+# It MUST only run inside Docker containers.
+#
+# Safety mechanisms:
+# 1. File has .dont.run.on.host extension on host (prevents execution)
+# 2. Dockerfile strips extension during build (executable in container)
+# 3. Runtime check below (backup safety - validates container environment)
+#
+# NEVER run this script directly on your host machine!
+# Use: bash tests/e2e/run-e2e-tests.sh (which runs in Docker)
 
 set -e  # Exit on error
+
+# ========================================
+# SAFETY CHECK: Verify running in container
+# ========================================
+if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
+    echo ""
+    echo "========================================="
+    echo "⛔ SAFETY CHECK FAILED ⛔"
+    echo "========================================="
+    echo ""
+    echo "This script performs DESTRUCTIVE operations:"
+    echo "  - Deletes ~/.swic directory"
+    echo "  - Deletes .swic directory"
+    echo "  - Removes node_modules"
+    echo ""
+    echo "It MUST only run inside Docker containers."
+    echo ""
+    echo "Current environment is NOT a container."
+    echo ""
+    echo "To run E2E tests safely:"
+    echo "  bash tests/e2e/run-e2e-tests.sh"
+    echo ""
+    echo "This will run tests in an isolated Docker container."
+    echo "========================================="
+    echo ""
+    exit 1
+fi
+
+echo "✓ Container environment detected - safe to proceed"
+echo ""
 
 TEST_NAME="npm-project-fresh"
 FAILED=0
