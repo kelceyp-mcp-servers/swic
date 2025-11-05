@@ -1,6 +1,6 @@
 import { createCommand } from '@kelceyp/clibuilder';
 import type { CoreServices } from '../../../core/Core.js';
-import docAddressResolver from '../../../core/utils/docAddressResolver.js';
+import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
 
 /**
  * Creates the 'read' command for the doc CLI group.

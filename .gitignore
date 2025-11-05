@@ -101,6 +101,9 @@ docker-claude.tar
 .claude/
 .swic/
 
+# E2E test scratch directory
+tests/e2e-local/
+
 # Bun
 bun.lockb
 .bun/

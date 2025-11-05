@@ -1,5 +1,3 @@
-import type { CoreServices } from '../../../../core/Core.js';
-
 /**
  * MCP Tool Definition
  * Describes the tool's name, description, and input schema
@@ -17,6 +15,7 @@ export interface ToolDefinition {
 export interface ToolResponseContent {
     type: 'text';
     text: string;
+    [key: string]: unknown;
 }
 
 /**
@@ -25,6 +24,7 @@ export interface ToolResponseContent {
  */
 export interface ToolResponse {
     content: ToolResponseContent[];
+    [key: string]: unknown;
 }
 
 /**
@@ -32,7 +32,7 @@ export interface ToolResponse {
  * Async function that processes tool invocations
  */
 export interface ToolHandler {
-    (args: any, services: CoreServices): Promise<ToolResponse>;
+    (args: any): Promise<ToolResponse>;
 }
 
 /**

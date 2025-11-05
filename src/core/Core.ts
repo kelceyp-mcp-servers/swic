@@ -36,10 +36,11 @@ const ensureBoundariesSync = (projectDocBoundary: string, sharedDocBoundary: str
     try {
         mkdirSync(projectDocBoundary, { recursive: true });
         mkdirSync(sharedDocBoundary, { recursive: true });
-    } catch (error) {
+    }
+    catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(
-            `Failed to create swic directories. Please check permissions.\n` +
+            'Failed to create swic directories. Please check permissions.\n' +
             `Project: ${projectDocBoundary}\n` +
             `Shared: ${sharedDocBoundary}\n` +
             `Error: ${message}`

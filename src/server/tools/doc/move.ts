@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { CoreServices } from '../../../core/Core.js';
 import type { DocToolApi, ToolDefinition, ToolHandler } from './shared/types.js';
-import docAddressResolver from '../../../core/utils/docAddressResolver.js';
+import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
 
 /**
  * Creates the 'doc_move' MCP tool

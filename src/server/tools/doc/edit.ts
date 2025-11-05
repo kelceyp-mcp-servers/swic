@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { CoreServices } from '../../../core/Core.js';
 import type { DocToolApi, ToolDefinition, ToolHandler } from './shared/types.js';
-import docAddressResolver from '../../../core/utils/docAddressResolver.js';
-import type { EditOp } from '../../../core/services/docService.js';
+import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
+import type { EditOp } from '../../../core/services/DocService.js';
 
 /**
  * Creates the 'doc_edit' MCP tool
@@ -83,6 +83,9 @@ const create = (services: CoreServices): DocToolApi => {
                 content: operation.content
             };
             break;
+
+        default:
+            throw new Error(`Unknown operation type: ${(operation as any).type}`);
         }
 
         // Build address
@@ -97,9 +100,6 @@ const create = (services: CoreServices): DocToolApi => {
             const doc = await services.DocService.read(address);
             effectiveBaseHash = doc.hash;
         }
-        else {
-            validateString(effectiveBaseHash, 'baseHash');
-        }
 
         // Perform edit
         const result = await services.DocService.editLatest(
@@ -109,8 +109,8 @@ const create = (services: CoreServices): DocToolApi => {
         );
 
         // Build response
-        const message = `Edited doc: ${result.id}
-Applied: ${result.appliedEdits} edit operation(s)
+        const message = `Edited doc: ${identifier}
+Applied: ${result.applied} edit operation(s)
 New hash: ${result.newHash}`;
 
         return {

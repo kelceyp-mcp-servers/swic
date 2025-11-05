@@ -409,7 +409,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             if (!detectedScope) {
                 fail('INVALID_ID_FORMAT', `Invalid doc ID format: '${addr.id}'. Expected docNNN or sdocNNN`, { id: addr.id });
             }
-            return { scope: detectedScope };
+            return { scope: detectedScope! };
         }
 
         // Path-based: try project first, then shared
@@ -858,7 +858,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             frontMatter,
             bodyContent,
             path: canonicalPath,
-            id: canonicalId
+            id: canonicalId as docId
         };
     };
 
@@ -930,7 +930,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             }
             else if (addr.kind === 'path') {
                 const pathAddr = addr as Omit<AddressPath, 'version'>;
-                const normalized = normalizePathAddress({ ...pathAddr, scope } as AddressPath);
+                const normalized = normalizePathAddress({ ...pathAddr, scope } as AddressPath & { scope: Scope });
                 const { index } = await readIndex(scope);
                 const foundId = Object.keys(index).find(id => index[id] === normalized.path);
                 if (!foundId) {
