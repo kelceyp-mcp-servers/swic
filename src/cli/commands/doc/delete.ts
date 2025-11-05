@@ -43,12 +43,6 @@ const create = (services: CoreServices) => {
             .name('scope')
             .type('string')
             .flag('scope', 's')
-            .validate((value) => {
-                if (value && value !== 'project' && value !== 'shared') {
-                    return 'Scope must be "project" or "shared"';
-                }
-                return true;
-            })
         )
         .param((p) => p
             .name('hash')
@@ -60,6 +54,14 @@ const create = (services: CoreServices) => {
             .type('boolean')
             .flag('confirm', 'y')
         )
+        .preValidate((ctx) => {
+            if (ctx.argv.flags.scope &&
+                ctx.argv.flags.scope !== 'project' &&
+                ctx.argv.flags.scope !== 'shared') {
+                return 'Scope must be "project" or "shared"';
+            }
+            return true;
+        })
         .run(async (ctx) => {
             const { identifier, scope, hash, confirm } = ctx.params;
 

@@ -19,12 +19,6 @@ const create = (services: CoreServices) => {
             .name('scope')
             .type('string')
             .flag('scope', 's')
-            .validate((value) => {
-                if (value && value !== 'project' && value !== 'shared') {
-                    return 'Scope must be "project" or "shared"';
-                }
-                return true;
-            })
         )
         .param((p) => p
             .name('content')
@@ -37,6 +31,23 @@ const create = (services: CoreServices) => {
             .type('boolean')
             .flag('interactive', 'i')
         )
+        .preValidate((ctx) => {
+            // Scope validation
+            if (ctx.argv.flags.scope &&
+                ctx.argv.flags.scope !== 'project' &&
+                ctx.argv.flags.scope !== 'shared') {
+                return 'Scope must be "project" or "shared"';
+            }
+
+            // Content requirement when not interactive
+            if (!ctx.argv.flags.interactive &&
+                !ctx.argv.flags.content &&
+                !ctx.stdin.available) {
+                return 'Content required. Provide via --content, stdin, or use --interactive';
+            }
+
+            return true;
+        })
         .run(async (ctx) => {
             const { path, scope, content, interactive } = ctx.params;
 
@@ -72,7 +83,7 @@ const create = (services: CoreServices) => {
                 }
             }
             else {
-                // Require content from stdin or flag
+                // Content from stdin or flag
                 if (!content) {
                     throw new Error('Content is required. Provide via --content, stdin, or use --interactive');
                 }

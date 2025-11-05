@@ -51,23 +51,11 @@ const create = (services: CoreServices) => {
             .name('scope')
             .type('string')
             .flag('scope', 's')
-            .validate((value) => {
-                if (value && value !== 'project' && value !== 'shared') {
-                    return 'Scope must be "project" or "shared"';
-                }
-                return true;
-            })
         )
         .param((p) => p
             .name('toScope')
             .type('string')
             .flag('to-scope', 't')
-            .validate((value) => {
-                if (value && value !== 'project' && value !== 'shared') {
-                    return 'To-scope must be "project" or "shared"';
-                }
-                return true;
-            })
             .prompt({
                 message: 'Destination scope (leave blank for same scope):',
                 type: 'select',
@@ -79,6 +67,19 @@ const create = (services: CoreServices) => {
             .type('boolean')
             .flag('confirm', 'y')
         )
+        .preValidate((ctx) => {
+            const { scope, toScope } = ctx.argv.flags;
+
+            if (scope && scope !== 'project' && scope !== 'shared') {
+                return 'Scope must be "project" or "shared"';
+            }
+
+            if (toScope && toScope !== 'project' && toScope !== 'shared') {
+                return 'To-scope must be "project" or "shared"';
+            }
+
+            return true;
+        })
         .run(async (ctx) => {
             const { source, destination, scope, toScope, confirm } = ctx.params;
 

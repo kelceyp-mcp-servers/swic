@@ -25,7 +25,7 @@
     "lint:fix": "eslint src scripts archive --ext .ts --fix"
   },
   "dependencies": {
-    "@kelceyp/clibuilder": "^0.1.9",
+    "@kelceyp/clibuilder": "^0.2.0",
     "@kelceyp/swic": "^0.1.10",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "debug": "^4.4.3"

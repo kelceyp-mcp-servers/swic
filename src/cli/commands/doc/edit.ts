@@ -27,12 +27,6 @@ const create = (services: CoreServices) => {
             .name('scope')
             .type('string')
             .flag('scope', 's')
-            .validate((value) => {
-                if (value && value !== 'project' && value !== 'shared') {
-                    return 'Scope must be "project" or "shared"';
-                }
-                return true;
-            })
         )
         .param((p) => p
             .name('interactive')
@@ -53,18 +47,32 @@ const create = (services: CoreServices) => {
             .name('mode')
             .type('string')
             .flag('mode', 'm')
-            .validate((value) => {
-                if (value && !['once', 'all', 'regex'].includes(value)) {
-                    return 'Mode must be one of: once, all, regex';
-                }
-                return true;
-            })
         )
         .param((p) => p
             .name('hash')
             .type('string')
             .flag('hash', 'h')
         )
+        .preValidate((ctx) => {
+            const { scope, mode, interactive, old, new: newText } = ctx.argv.flags;
+
+            // Scope validation
+            if (scope && scope !== 'project' && scope !== 'shared') {
+                return 'Scope must be "project" or "shared"';
+            }
+
+            // Mode validation
+            if (mode && !['once', 'all', 'regex'].includes(mode)) {
+                return 'Mode must be one of: once, all, regex';
+            }
+
+            // Replace mode requirements when not interactive
+            if (!interactive && (!old || newText === undefined)) {
+                return 'Replace mode requires --old and --new flags (or use --interactive)';
+            }
+
+            return true;
+        })
         .run(async (ctx) => {
             const { identifier, scope, interactive, old, new: newText, mode, hash } = ctx.params;
 
@@ -110,11 +118,7 @@ const create = (services: CoreServices) => {
                 }
             }
             else {
-                // Replace mode: require old and new flags
-                if (!old || newText === undefined) {
-                    throw new Error('Replace mode requires --old and --new flags');
-                }
-
+                // Replace mode (validated in preValidate)
                 const editMode = mode || 'all';
 
                 if (editMode === 'once') {
