@@ -5,6 +5,7 @@
       "name": "swic",
       "dependencies": {
         "@kelceyp/clibuilder": "^0.1.9",
+        "@kelceyp/swic": "^0.1.9",
         "@modelcontextprotocol/sdk": "^1.0.0",
         "debug": "^4.4.3",
       },
@@ -120,6 +121,8 @@
     "@inquirer/type": ["@inquirer/type@3.0.9", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-QPaNt/nmE2bLGQa9b7wwyRJoLZ7pN6rcyXvzU0YCmivmJyq1BVo94G98tStRWkoD1RgDX5C+dPlhhHzNdu/W/w=="],
 
     "@kelceyp/clibuilder": ["@kelceyp/clibuilder@0.1.9", "", { "dependencies": { "@inquirer/prompts": "^7.9.0", "@kelceyp/clibuilder": "^0.1.5", "chalk": "^5.3.0", "ora": "^8.0.0" } }, "sha512-hczhdb7s2T5ykjd1gt2NxW00aWKzGlDveOtrXBDFiTmPJbW+KI1fa0l4RzBe0Ittwhv4zHBbchP7Q5BAVy/ttw=="],
+
+    "@kelceyp/swic": ["@kelceyp/swic@0.1.9", "", { "dependencies": { "@kelceyp/clibuilder": "^0.1.9", "@kelceyp/swic": "^0.1.8", "@modelcontextprotocol/sdk": "^1.0.0", "debug": "^4.4.3" }, "bin": { "swic-mcp": "dist/server/Server.js", "swic": "dist/cli/cli.js" } }, "sha512-QpL1tanIjYqHW7T6omvYya7lRQCdzr/ZWqrvFZMoJpQGye24l2rkEkXXvuyqH4kA+lOTHCo68q1rOSKseKfWnA=="],
 
     "@modelcontextprotocol/sdk": ["@modelcontextprotocol/sdk@1.20.1", "", { "dependencies": { "ajv": "^6.12.6", "content-type": "^1.0.5", "cors": "^2.8.5", "cross-spawn": "^7.0.5", "eventsource": "^3.0.2", "eventsource-parser": "^3.0.0", "express": "^5.0.1", "express-rate-limit": "^7.5.0", "pkce-challenge": "^5.0.0", "raw-body": "^3.0.0", "zod": "^3.23.8", "zod-to-json-schema": "^3.24.1" } }, "sha512-j/P+yuxXfgxb+mW7OEoRCM3G47zCTDqUPivJo/VzpjbG8I9csTXtOprCf5FfOfHK4whOJny0aHuBEON+kS7CCA=="],
 

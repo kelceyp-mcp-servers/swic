@@ -2,7 +2,7 @@
   "mcpServers": {
     "swic": {
       "command": "npx",
-      "args": ["swic-mcp"]
+      "args": ["-y", "swic-mcp"]
     }
   }
 }

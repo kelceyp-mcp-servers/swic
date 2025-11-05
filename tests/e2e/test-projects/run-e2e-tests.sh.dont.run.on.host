@@ -8,35 +8,9 @@ set -e  # Note: we handle failures ourselves, don't exit on first error
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# ========================================
-# SAFETY CHECK: Verify running in container
-# ========================================
-if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
-    echo ""
-    echo "========================================="
-    echo "⛔ SAFETY CHECK FAILED ⛔"
-    echo "========================================="
-    echo ""
-    echo "This script orchestrates DESTRUCTIVE test scripts that:"
-    echo "  - Delete ~/.swic directory"
-    echo "  - Delete .swic directories"
-    echo "  - Remove node_modules"
-    echo ""
-    echo "It MUST only run inside Docker containers."
-    echo ""
-    echo "Current environment is NOT a container."
-    echo ""
-    echo "To run E2E tests safely:"
-    echo "  bash tests/e2e/run-e2e-tests.sh"
-    echo ""
-    echo "This will run tests in an isolated Docker container."
-    echo "========================================="
-    echo ""
-    exit 1
-fi
-
-echo "✓ Container environment detected - safe to proceed"
-echo ""
+# Source shared safety check
+source "$SCRIPT_DIR/../lib/safety-check.sh"
+verify_container_environment
 
 # Bun is pre-installed in the image
 export BUN_INSTALL="$HOME/.bun"

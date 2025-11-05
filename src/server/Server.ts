@@ -59,7 +59,7 @@ const create = (options: ServerOptions): ServerApi => {
                     description: tool.definition.description,
                     inputSchema: tool.definition.inputSchema
                 },
-                async (args) => tool.handler(args, services)
+                async (args) => tool.handler(args)
             );
         }
 
@@ -106,7 +106,19 @@ const Server = Object.freeze({
 });
 
 // Run if this is the main module
-if (import.meta.main) {
+// Bun uses import.meta.main, Node.js needs canonical path comparison
+import { pathToFileURL, fileURLToPath } from 'url';
+import { realpathSync } from 'fs';
+const isMain = import.meta.main ?? (() => {
+    try {
+        const scriptPath = realpathSync(fileURLToPath(import.meta.url));
+        const argPath = realpathSync(process.argv[1]);
+        return scriptPath === argPath;
+    } catch {
+        return false;
+    }
+})();
+if (isMain) {
     main().catch(console.error);
 }
 

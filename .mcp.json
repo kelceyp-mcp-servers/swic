@@ -7,6 +7,13 @@
         "dist/server/Server.js"
       ]
     },
+    "swic-npm": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "swic-mcp"
+      ]
+    },
     "filesystem": {
       "command": "npx",
       "args": [

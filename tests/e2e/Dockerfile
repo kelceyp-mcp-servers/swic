@@ -30,9 +30,10 @@ WORKDIR /home/node
 # Verify bun installation
 RUN bun --version
 
-# Copy test-projects directory and strip .dont.run.on.host extensions
+# Copy test-projects and lib directories
 # This makes scripts executable in container while keeping them safe on host
 COPY --chown=node:node tests/e2e/test-projects /home/node/test-projects
+COPY --chown=node:node tests/e2e/lib /home/node/lib
 
 # Strip the safety extensions from all .sh.dont.run.on.host files
 USER root

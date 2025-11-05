@@ -105,6 +105,9 @@ docker-claude.tar
 bun.lockb
 .bun/
 
+# npm (project uses bun, ignore npm artifacts)
+package-lock.json
+
 # Miscellaneous
 .cache/
 .parcel-cache/

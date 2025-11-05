@@ -18,34 +18,9 @@
 
 set -e  # Exit on error
 
-# ========================================
-# SAFETY CHECK: Verify running in container
-# ========================================
-if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
-    echo ""
-    echo "========================================="
-    echo "⛔ SAFETY CHECK FAILED ⛔"
-    echo "========================================="
-    echo ""
-    echo "This script performs DESTRUCTIVE operations:"
-    echo "  - Deletes ~/.swic directory"
-    echo "  - Removes node_modules"
-    echo ""
-    echo "It MUST only run inside Docker containers."
-    echo ""
-    echo "Current environment is NOT a container."
-    echo ""
-    echo "To run E2E tests safely:"
-    echo "  bash tests/e2e/run-e2e-tests.sh"
-    echo ""
-    echo "This will run tests in an isolated Docker container."
-    echo "========================================="
-    echo ""
-    exit 1
-fi
-
-echo "✓ Container environment detected - safe to proceed"
-echo ""
+# Source shared safety check
+source "$(dirname "$0")/../../lib/safety-check.sh"
+verify_container_environment
 
 TEST_NAME="npm-project-existing-swic"
 FAILED=0
@@ -89,10 +64,8 @@ verify_content() {
     fi
 }
 
-# Clean up any existing installation but preserve .swic/docs/existing-doc.md
-log_step "Cleaning up previous installation (preserving existing docs)"
-rm -rf node_modules package-lock.json 2>/dev/null || true
-rm -rf ~/.swic 2>/dev/null || true
+# Fresh container starts clean - no cleanup needed
+log_step "Starting with clean container environment"
 log_success "Clean slate (existing docs preserved)"
 
 # Verify pre-existing doc exists
@@ -100,9 +73,11 @@ log_step "Verifying pre-existing doc"
 verify_file ".swic/docs/existing-doc.md"
 verify_content ".swic/docs/existing-doc.md" "This document existed before"
 
-# Configure npm with read-only token
+# Configure npm with read-only token via environment variable
 if [ -n "${SWIC_CLIBUILDER_READ_ACCESS:-}" ]; then
-    echo "//registry.npmjs.org/:_authToken=${SWIC_CLIBUILDER_READ_ACCESS}" > ~/.npmrc
+    export NODE_AUTH_TOKEN="${SWIC_CLIBUILDER_READ_ACCESS}"
+    npm config set @kelceyp:registry https://registry.npmjs.org/ --location=project
+    npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}" --location=project
 fi
 
 # Test 1: Install @kelceyp/swic
@@ -184,6 +159,98 @@ fi
 log_step "Final verification of existing doc"
 verify_file ".swic/docs/existing-doc.md"
 verify_content ".swic/docs/existing-doc.md" "This document existed before"
+
+# ========================================
+# MCP TESTS via Claude CLI
+# ========================================
+echo ""
+echo "========================================="
+echo "MCP Tests (via claude -p)"
+echo "========================================="
+
+# Test MCP 1: Verify .mcp.json is valid and swic tools are registered
+log_step "Verifying MCP configuration"
+MCP_TOOLS_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "List all available MCP tools that start with 'swic' or 'mcp__swic'. Just output the tool names, one per line, nothing else." 2>&1 || true)
+
+if echo "$MCP_TOOLS_OUTPUT" | grep -q "swic\|mcp__swic"; then
+    log_success "SWIC MCP tools registered"
+else
+    log_failure "SWIC MCP tools not found. Output: $MCP_TOOLS_OUTPUT"
+fi
+
+# Test MCP 2: Create a doc via MCP
+log_step "Creating doc via MCP (doc_create)"
+MCP_CREATE_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "Use the mcp__swic__doc_create tool to create a document with scope='project', path='mcp-test/created', and content='Created via MCP'. Report only the doc ID that was created, nothing else." 2>&1 || true)
+
+if echo "$MCP_CREATE_OUTPUT" | grep -q "doc[0-9]"; then
+    log_success "Created doc via MCP"
+else
+    log_failure "Failed to create doc via MCP. Output: $MCP_CREATE_OUTPUT"
+fi
+
+# Test MCP 3: Read the doc via MCP
+log_step "Reading doc via MCP (doc_read)"
+MCP_READ_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "Use the mcp__swic__doc_read tool to read the document at path 'mcp-test/created' in project scope. Report only the content of the document, nothing else." 2>&1 || true)
+
+if echo "$MCP_READ_OUTPUT" | grep -q "Created via MCP"; then
+    log_success "Read doc via MCP"
+else
+    log_failure "Failed to read doc via MCP. Output: $MCP_READ_OUTPUT"
+fi
+
+# Test MCP 4: List docs via MCP
+log_step "Listing docs via MCP (doc_list)"
+MCP_LIST_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "Use the mcp__swic__doc_list tool to list all documents in project scope. Report only the number of documents found, nothing else." 2>&1 || true)
+
+if echo "$MCP_LIST_OUTPUT" | grep -q "[0-9]"; then
+    log_success "Listed docs via MCP"
+else
+    log_failure "Failed to list docs via MCP. Output: $MCP_LIST_OUTPUT"
+fi
+
+# Test MCP 5: Edit the doc via MCP
+log_step "Editing doc via MCP (doc_edit)"
+MCP_EDIT_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "Use the mcp__swic__doc_edit tool to edit the document at path 'mcp-test/created' in project scope. Use operation type 'replaceOnce' to replace 'MCP' with 'Claude'. Report only 'success' if it worked, nothing else." 2>&1 || true)
+
+if echo "$MCP_EDIT_OUTPUT" | grep -qi "success"; then
+    log_success "Edited doc via MCP"
+else
+    log_failure "Failed to edit doc via MCP. Output: $MCP_EDIT_OUTPUT"
+fi
+
+# Test MCP 6: Verify edit worked
+log_step "Verifying edit via CLI"
+VERIFY_EDIT=$(npx swic doc read mcp-test/created --scope project 2>&1 || true)
+
+if echo "$VERIFY_EDIT" | grep -q "Created via Claude"; then
+    log_success "Edit verified - content updated"
+else
+    log_failure "Edit verification failed. Content: $VERIFY_EDIT"
+fi
+
+# Test MCP 7: Delete the doc via MCP
+log_step "Deleting doc via MCP (doc_delete)"
+MCP_DELETE_OUTPUT=$(claude --dangerously-skip-permissions --mcp-config .mcp.json -p "Use the mcp__swic__doc_delete tool to delete the document at path 'mcp-test/created' in project scope. Report only 'success' if it worked, nothing else." 2>&1 || true)
+
+if echo "$MCP_DELETE_OUTPUT" | grep -qi "success"; then
+    log_success "Deleted doc via MCP"
+else
+    log_failure "Failed to delete doc via MCP. Output: $MCP_DELETE_OUTPUT"
+fi
+
+# Test MCP 8: Verify deletion
+log_step "Verifying deletion via CLI"
+VERIFY_DELETE=$(npx swic doc list --scope project 2>&1 || true)
+
+if ! echo "$VERIFY_DELETE" | grep -q "mcp-test/created"; then
+    log_success "Deletion verified"
+else
+    log_failure "Doc still exists after deletion"
+fi
+
+echo ""
+echo "MCP tests completed"
+echo ""
 
 # Summary
 echo ""
