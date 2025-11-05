@@ -7,7 +7,40 @@
 # - Clean git working directory recommended
 # - All tests passing
 
-set -e
+# Handle description request
+if [[ "${1:-}" == "--description" ]]; then
+    echo "Publish @kelceyp/swic package to npm"
+    exit 0
+fi
+
+# Handle help request
+if [[ "${1:-}" == "--help" ]]; then
+    echo "Publish @kelceyp/swic to npm"
+    echo ""
+    echo "Usage: $(basename "$0")"
+    echo ""
+    echo "Interactive script that builds, packages, and publishes to npm."
+    echo ""
+    echo "Prerequisites:"
+    echo "  - Logged in to npm (npm login)"
+    echo "  - Clean git working directory recommended"
+    echo "  - All tests passing"
+    echo ""
+    echo "Options:"
+    echo "  --help         Show this help message"
+    echo "  --description  Show brief description"
+    echo "  --usage        Show usage line"
+    exit 0
+fi
+
+# Handle usage request
+if [[ "${1:-}" == "--usage" ]]; then
+    echo "Usage: $(basename "$0")"
+    exit 0
+fi
+
+# Enable strict error handling AFTER flag handling
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'

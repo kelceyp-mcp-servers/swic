@@ -19,7 +19,7 @@ const create = (services: CoreServices): DocToolApi => {
         description: 'Delete one or more docs using optimistic locking. Idempotent - does not error if doc already deleted. Supports bulk operations by passing an array of identifiers.',
         inputSchema: {
             identifier: z.union([
-                z.string().describe('Single doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
+                z.string().describe('Single doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
                 z.array(z.string()).describe('Array of doc IDs or paths for bulk delete')
             ]).describe('doc identifier(s) - ID or path, single or array'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),

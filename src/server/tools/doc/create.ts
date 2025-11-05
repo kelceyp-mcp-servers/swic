@@ -17,7 +17,7 @@ const create = (services: CoreServices): DocToolApi => {
         description: 'Create a new doc with content. Returns the created doc ID.',
         inputSchema: {
             scope: z.enum(['project', 'shared']).describe('Scope for the doc (project or shared)'),
-            path: z.string().describe('Path for the doc (e.g., "auth/jwt-setup" or "auth/jwt-setup.md")'),
+            path: z.string().describe('Path for the doc (e.g., "auth/jwt-setup.md")'),
             content: z.string().describe('Content of the doc')
         }
     };

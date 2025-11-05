@@ -18,7 +18,7 @@ const create = (services: CoreServices): DocToolApi => {
         description: 'Read one or more docs by ID or path. Returns content with optional metadata. Supports bulk operations by passing an array of identifiers.',
         inputSchema: {
             identifier: z.union([
-                z.string().describe('Single doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
+                z.string().describe('Single doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
                 z.array(z.string()).describe('Array of doc IDs or paths for bulk read')
             ]).describe('doc identifier(s) - ID or path, single or array'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. If omitted, auto-resolves (checks project first, then shared, or infers from ID prefix)'),

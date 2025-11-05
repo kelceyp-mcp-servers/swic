@@ -17,7 +17,7 @@ const create = (services: CoreServices): DocToolApi => {
         name: 'doc_move',
         description: 'Move or rename a doc to a new path. Generates a new ID. Supports cross-scope moves.',
         inputSchema: {
-            source: z.string().describe('Source doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
+            source: z.string().describe('Source doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
             destination: z.string().describe('Destination path (not ID) for the doc'),
             sourceScope: z.enum(['project', 'shared']).optional().describe('Optional. Source scope. Auto-resolves if omitted.'),
             destinationScope: z.enum(['project', 'shared']).optional().describe('Optional. Destination scope. Defaults to source scope if omitted.')

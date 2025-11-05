@@ -17,7 +17,7 @@ const create = (services: CoreServices): DocToolApi => {
         name: 'doc_edit',
         description: 'Edit doc content using text replacement operations. Uses optimistic locking to prevent concurrent modifications.',
         inputSchema: {
-            identifier: z.string().describe('doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup")'),
+            identifier: z.string().describe('doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),
             operation: z.discriminatedUnion('type', [
                 z.object({
