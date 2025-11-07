@@ -107,14 +107,15 @@ const Server = Object.freeze({
 
 // Run if this is the main module
 // Bun uses import.meta.main, Node.js needs canonical path comparison
-import { pathToFileURL, fileURLToPath } from 'url';
+import { fileURLToPath } from 'url';
 import { realpathSync } from 'fs';
 const isMain = import.meta.main ?? (() => {
     try {
         const scriptPath = realpathSync(fileURLToPath(import.meta.url));
         const argPath = realpathSync(process.argv[1]);
         return scriptPath === argPath;
-    } catch {
+    }
+    catch {
         return false;
     }
 })();

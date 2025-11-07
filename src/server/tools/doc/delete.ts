@@ -6,7 +6,7 @@ import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
 
 /**
  * Creates the 'doc_delete' MCP tool
- * Deletes one or more docs using optimistic locking
+ * Deletes one or more docs using last-write-wins semantics
  * Supports bulk operations with array input
  * Idempotent - does not error on already-deleted docs
  *
@@ -16,24 +16,23 @@ import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
 const create = (services: CoreServices): DocToolApi => {
     const definition: ToolDefinition = {
         name: 'doc_delete',
-        description: 'Delete one or more docs using optimistic locking. Idempotent - does not error if doc already deleted. Supports bulk operations by passing an array of identifiers.',
+        description: 'Delete one or more docs. Idempotent - does not error if doc already deleted. Supports bulk operations by passing an array of identifiers.',
         inputSchema: {
             identifier: z.union([
                 z.string().describe('Single doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
                 z.array(z.string()).describe('Array of doc IDs or paths for bulk delete')
             ]).describe('doc identifier(s) - ID or path, single or array'),
-            scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),
-            expectedHash: z.string().optional().describe('Optional. Expected hash for optimistic locking. If omitted, automatically fetches current hash for each doc.')
+            scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)')
         }
     };
 
     const handler: ToolHandler = async (args) => {
-        const { identifier, scope, expectedHash } = args;
+        const { identifier, scope } = args;
 
         // Parse identifiers (handles both single and array)
         const identifiers = parseIdentifiers(identifier);
 
-        // Read all docs in parallel to get hashes and verify existence
+        // Read all docs in parallel to get IDs and verify existence
         const docs = await Promise.all(
             identifiers.map(async (id) => {
                 const isId = docAddressResolver.isdocId(id);
@@ -54,12 +53,7 @@ const create = (services: CoreServices): DocToolApi => {
         const results: Array<{ id: string; deleted: boolean }> = [];
 
         for (const item of docs) {
-            const hash = expectedHash || item.doc.hash;
-
-            const result = await services.DocService.deleteLatest(
-                item.address,
-                hash
-            );
+            const result = await services.DocService.deleteLatest(item.address);
 
             results.push({
                 id: item.doc.id,

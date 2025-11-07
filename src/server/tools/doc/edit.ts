@@ -7,7 +7,7 @@ import type { EditOp } from '../../../core/services/DocService.js';
 /**
  * Creates the 'doc_edit' MCP tool
  * Edits doc content using text replacement operations
- * Uses optimistic locking with hash verification
+ * Uses last-write-wins semantics
  *
  * @param services - Core services including docService
  * @returns docToolApi with definition and handler
@@ -15,7 +15,7 @@ import type { EditOp } from '../../../core/services/DocService.js';
 const create = (services: CoreServices): DocToolApi => {
     const definition: ToolDefinition = {
         name: 'doc_edit',
-        description: 'Edit doc content using text replacement operations. Uses optimistic locking to prevent concurrent modifications.',
+        description: 'Edit doc content using text replacement operations. Uses last-write-wins semantics.',
         inputSchema: {
             identifier: z.string().describe('doc ID (e.g., "doc001") or path (e.g., "auth/jwt-setup.md")'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. Auto-resolves if omitted (checks project first, then shared, or infers from ID prefix)'),
@@ -40,13 +40,12 @@ const create = (services: CoreServices): DocToolApi => {
                     type: z.literal('replaceAllContent'),
                     content: z.string()
                 })
-            ]).describe('Edit operation to perform'),
-            baseHash: z.string().optional().describe('Optional. Expected hash for optimistic locking. If omitted, automatically fetches current hash.')
+            ]).describe('Edit operation to perform')
         }
     };
 
     const handler: ToolHandler = async (args) => {
-        const { identifier, scope, operation, baseHash } = args;
+        const { identifier, scope, operation } = args;
 
         // Map operation to EditOp (Zod has already validated the structure)
         let editOp: EditOp;
@@ -94,24 +93,15 @@ const create = (services: CoreServices): DocToolApi => {
             ? { kind: 'id' as const, scope: scope as 'project' | 'shared' | undefined, id: identifier }
             : { kind: 'path' as const, scope: scope as 'project' | 'shared' | undefined, path: identifier };
 
-        // Get baseHash if not provided
-        let effectiveBaseHash = baseHash;
-        if (!effectiveBaseHash) {
-            const doc = await services.DocService.read(address);
-            effectiveBaseHash = doc.hash;
-        }
-
         // Perform edit
         const result = await services.DocService.editLatest(
             address,
-            effectiveBaseHash,
             [editOp]
         );
 
         // Build response
         const message = `Edited doc: ${identifier}
-Applied: ${result.applied} edit operation(s)
-New hash: ${result.newHash}`;
+Applied: ${result.applied} edit operation(s)`;
 
         return {
             content: [

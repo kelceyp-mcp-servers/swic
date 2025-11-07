@@ -1,6 +1,5 @@
 import { readFile, writeFile, unlink, stat as fsStat, rename, access, mkdir } from 'fs/promises';
 import { constants } from 'fs';
-import { createHash } from 'crypto';
 import { resolve, dirname, isAbsolute } from 'path';
 import pathSecurity from '../utils/pathSecurity.js';
 
@@ -49,33 +48,18 @@ interface FileServiceApi {
     stat(relativePath: string): Promise<Stats>;
 
     /**
-     * Read a text file and compute its hash
+     * Read a text file
      *
      * Reads file content as UTF-8 encoded text. Do not use this method for binary files.
-     * The hash is computed from the exact UTF-8 bytes with no normalization.
      *
      * @param relativePath - Path relative to the boundary directory
-     * @returns Object containing file content (UTF-8 string) and SHA-256 hash (lowercase hex)
+     * @returns File content as UTF-8 string
      * @throws {FsError} NOT_FOUND if file doesn't exist
      * @throws {FsError} VALIDATION_ERROR if path is invalid
      * @throws {FsError} BOUNDARY_VIOLATION if path escapes boundary
      * @throws {FsError} FS_ERROR for permission or other filesystem errors
      */
-    readText(relativePath: string): Promise<{ content: string; hash: string }>;
-
-    /**
-     * Compute SHA-256 hash for a text string
-     * @param text - Text to hash
-     * @returns Hexadecimal hash string
-     */
-    computeHashForText(text: string): string;
-
-    /**
-     * Compute SHA-256 hash for binary data
-     * @param bytes - Buffer or Uint8Array to hash
-     * @returns Hexadecimal hash string
-     */
-    computeHashForBytes(bytes: Buffer | Uint8Array): string;
+    readText(relativePath: string): Promise<string>;
 
     /**
      * Safely resolve a relative path within the boundary
@@ -94,44 +78,37 @@ interface FileServiceApi {
     resolveSafe(relativePath: string): Promise<{ abs: string; rel: string }>;
 
     /**
-     * Write text to a file atomically, only if the current content matches expected hash
-     * Uses optimistic concurrency control with hash verification
+     * Write text to a file atomically
+     * Uses last-write-wins semantics - always overwrites existing content
      * @param relativePath - Path relative to the boundary directory
-     * @param baseHash - Expected hash of current content (empty string for new files)
      * @param newContent - New content to write
-     * @returns Object containing the new content hash
-     * @throws {FsError} If the path escapes the boundary, validation fails, or hash doesn't match
+     * @throws {FsError} If the path escapes the boundary or validation fails
      */
-    writeTextAtomicIfUnchanged(
+    writeText(
         relativePath: string,
-        baseHash: string,
         newContent: string
-    ): Promise<{ newHash: string }>;
+    ): Promise<void>;
 
     /**
-     * Delete a file if its content matches the expected hash
+     * Delete a file
      *
-     * Uses optimistic concurrency control with hash verification.
+     * Uses last-write-wins semantics - always deletes if file exists.
      * This operation is idempotent: if the file doesn't exist, returns { deleted: false }
      * without throwing an error. Callers should treat this as success (desired end state achieved).
      *
      * @example
-     * // First call: file exists with matching hash
-     * await service.deleteIfUnchanged('file.txt', hash);  // { deleted: true }
+     * // First call: file exists
+     * await service.delete('file.txt');  // { deleted: true }
      * // Second call: file already gone
-     * await service.deleteIfUnchanged('file.txt', hash);  // { deleted: false } - success!
+     * await service.delete('file.txt');  // { deleted: false } - success!
      *
      * @param relativePath - Path relative to the boundary directory
-     * @param expectedHash - Expected SHA-256 hash (64-character lowercase hex string)
      * @returns Object with deleted boolean (true if deleted, false if already missing)
-     * @throws {FsError} VALIDATION_ERROR if expectedHash format is invalid
-     * @throws {FsError} HASH_MISMATCH if file exists but hash doesn't match
      * @throws {FsError} BOUNDARY_VIOLATION if path escapes boundary
      * @throws {FsError} FS_ERROR for permission or other filesystem errors
      */
-    deleteIfUnchanged(
-        relativePath: string,
-        expectedHash: string
+    delete(
+        relativePath: string
     ): Promise<{ deleted: boolean }>;
 
     /**
@@ -149,7 +126,7 @@ interface FileServiceApi {
      * @param replacements - Array of replacements to apply (order matters)
      * @param options - Preview options
      * @param options.requireAll - If true, throws error if applied !== replacements.length
-     * @returns Preview result with new content, hash, and count of replacements
+     * @returns Preview result with new content and count of replacements
      * @throws {FsError} VALIDATION_ERROR if any oldText is empty string
      * @throws {FsError} VALIDATION_ERROR if requireAll is true and not all replacements were applied
      */
@@ -157,35 +134,31 @@ interface FileServiceApi {
         content: string,
         replacements: Array<{ oldText: string; newText: string }>,
         options?: { requireAll?: boolean }
-    ): { wouldContent: string; wouldHash: string; applied: number };
+    ): { wouldContent: string; applied: number };
 
     /**
-     * Apply text replacements atomically if current content matches expected hash
+     * Apply text replacements atomically
      *
-     * Uses optimistic concurrency control with hash verification.
+     * Uses last-write-wins semantics - always applies replacements to current content.
      * Delegates to previewReplaceFirst() for validation and replacement logic.
      *
-     * If applied === 0 (no replacements matched), no write occurs and the
-     * returned newHash equals the current hash.
+     * If applied === 0 (no replacements matched), no write occurs.
      *
      * @param relativePath - Path relative to the boundary directory
-     * @param expectedHash - Expected SHA-256 hash (64-character lowercase hex string)
      * @param replacements - Array of replacements to apply (order matters, see previewReplaceFirst)
      * @param options - Replacement options
      * @param options.requireAll - If true, throws error if not all replacements were applied
-     * @returns Result with new hash and count of replacements applied
-     * @throws {FsError} VALIDATION_ERROR if expectedHash format is invalid or oldText is empty
-     * @throws {FsError} HASH_MISMATCH if current hash doesn't match expectedHash
+     * @returns Result with count of replacements applied
+     * @throws {FsError} VALIDATION_ERROR if oldText is empty
      * @throws {FsError} VALIDATION_ERROR if requireAll is true and not all replacements were applied
      * @throws {FsError} BOUNDARY_VIOLATION if path escapes boundary
      * @throws {FsError} FS_ERROR for permission or other filesystem errors
      */
-    applyReplaceFirstIfUnchanged(
+    applyReplaceFirst(
         relativePath: string,
-        expectedHash: string,
         replacements: Array<{ oldText: string; newText: string }>,
         options?: { requireAll?: boolean }
-    ): Promise<{ newHash: string; applied: number }>;
+    ): Promise<{ applied: number }>;
 }
 
 
@@ -199,7 +172,7 @@ interface FileServiceApi {
  * const fileService = FileService.create({
  *   boundaryDir: resolve(process.cwd(), '.data')
  * });
- * const { content, hash } = await fileService.readText('project/docs/example.md');
+ * const content = await fileService.readText('project/docs/example.md');
  * ```
  */
 const create = (options: FileServiceOptions): FileServiceApi => {
@@ -238,41 +211,6 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         return abs;
     };
 
-    /**
-     * Validate hash format
-     * @internal
-     */
-    const validateHash = (hash: string, paramName: string, allowEmpty: boolean = false): void => {
-        if (allowEmpty && hash === '') {
-            return;
-        }
-        if (!/^[a-f0-9]{64}$/.test(hash)) {
-            const hint = allowEmpty
-                ? 'empty string or 64-character lowercase hex SHA-256 hash'
-                : '64-character lowercase hex SHA-256 hash';
-            throw pathSecurity.fsError(
-                'VALIDATION_ERROR',
-                `Invalid ${paramName}: must be a ${hint}`,
-                { [paramName]: hash }
-            );
-        }
-    };
-
-    /**
-     * Compute SHA-256 hash for text
-     * @internal
-     */
-    const computeHashForText = (text: string): string => {
-        return createHash('sha256').update(text, 'utf-8').digest('hex');
-    };
-
-    /**
-     * Compute SHA-256 hash for bytes
-     * @internal
-     */
-    const computeHashForBytes = (bytes: Buffer | Uint8Array): string => {
-        return createHash('sha256').update(bytes).digest('hex');
-    };
 
     /**
      * Check if file exists
@@ -308,10 +246,10 @@ const create = (options: FileServiceOptions): FileServiceApi => {
     };
 
     /**
-     * Read text file with hash
+     * Read text file
      * @internal
      */
-    const readText = async (relativePath: string): Promise<{ content: string; hash: string }> => {
+    const readText = async (relativePath: string): Promise<string> => {
         const absPath = await resolvePath(relativePath);
 
         // Validate it's a file first (separate from I/O error handling)
@@ -339,8 +277,7 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         // Read the file
         try {
             const content = await readFile(absPath, 'utf-8');
-            const hash = computeHashForText(content);
-            return { content, hash };
+            return content;
         }
         catch (error: any) {
             throw pathSecurity.mapOsError(error, {
@@ -352,110 +289,55 @@ const create = (options: FileServiceOptions): FileServiceApi => {
     };
 
     /**
-     * Write text atomically if unchanged
+     * Write text atomically
      * @internal
      */
-    const writeTextAtomicIfUnchanged = async (
+    const writeText = async (
         relativePath: string,
-        baseHash: string,
         newContent: string
-    ): Promise<{ newHash: string }> => {
-        // Validate hash format
-        validateHash(baseHash, 'baseHash', true);
-
+    ): Promise<void> => {
         const absPath = await resolvePath(relativePath);
 
-        // Compute next hash early to potentially avoid I/O if unchanged
-        const nextHash = computeHashForText(newContent);
-
-        // Try to read the file directly, handle ENOENT for new files (avoids TOCTOU)
-        let currentHash: string;
+        // Guard against writing to existing directory paths
+        let targetStat;
         try {
-            const result = await readText(relativePath);
-            currentHash = result.hash;
+            targetStat = await fsStat(absPath);
         }
-        catch (error: any) {
-            // File doesn't exist
-            if (error.code === 'NOT_FOUND') {
-                // For new files, baseHash should be empty string
-                if (baseHash !== '') {
-                    throw pathSecurity.fsError(
-                        'HASH_MISMATCH',
-                        `Hash mismatch: expected '${baseHash}' for new file, got '' (file does not exist)`,
-                        {
-                            path: relativePath,
-                            expected: baseHash,
-                            actual: ''
-                        }
-                    );
-                }
-
-                // Guard against writing to existing directory paths
-                let targetStat;
-                try {
-                    targetStat = await fsStat(absPath);
-                }
-                catch (statError: any) {
-                    // ENOENT is expected for new files - file truly doesn't exist
-                    if (statError.code === 'ENOENT') {
-                        // Expected case: path doesn't exist, continue to create
-                        targetStat = null;
-                    }
-                    else {
-                        // Unexpected error (permissions, etc.)
-                        throw pathSecurity.mapOsError(statError, {
-                            path: relativePath,
-                            resolved: absPath,
-                            operation: 'stat'
-                        });
-                    }
-                }
-
-                // Validation check - separate from I/O error handling
-                if (targetStat && !targetStat.isFile()) {
-                    throw pathSecurity.fsError(
-                        'VALIDATION_ERROR',
-                        'Target path exists and is not a regular file',
-                        { path: relativePath, resolved: absPath }
-                    );
-                }
-
-                // Ensure parent directory exists
-                try {
-                    await mkdir(dirname(absPath), { recursive: true });
-                }
-                catch (mkdirError: any) {
-                    throw pathSecurity.mapOsError(mkdirError, {
-                        path: dirname(relativePath),
-                        resolved: dirname(absPath),
-                        operation: 'mkdir'
-                    });
-                }
-                currentHash = '';
+        catch (statError: any) {
+            // ENOENT is expected for new files - file truly doesn't exist
+            if (statError.code === 'ENOENT') {
+                // Expected case: path doesn't exist, continue to create
+                targetStat = null;
             }
             else {
-                throw error;
+                // Unexpected error (permissions, etc.)
+                throw pathSecurity.mapOsError(statError, {
+                    path: relativePath,
+                    resolved: absPath,
+                    operation: 'stat'
+                });
             }
         }
 
-        // Verify hash matches expected
-        if (currentHash !== baseHash) {
+        // Validation check - separate from I/O error handling
+        if (targetStat && !targetStat.isFile()) {
             throw pathSecurity.fsError(
-                'HASH_MISMATCH',
-                `Hash mismatch: expected '${baseHash}', got '${currentHash}'`,
-                {
-                    path: relativePath,
-                    expected: baseHash,
-                    actual: currentHash
-                }
+                'VALIDATION_ERROR',
+                'Target path exists and is not a regular file',
+                { path: relativePath, resolved: absPath }
             );
         }
 
-        // No-op write path: if content is unchanged, skip write entirely to preserve
-        // mtime and avoid unnecessary I/O. This prevents spurious mtime updates when
-        // callers re-apply the same content.
-        if (nextHash === baseHash) {
-            return { newHash: baseHash };
+        // Ensure parent directory exists
+        try {
+            await mkdir(dirname(absPath), { recursive: true });
+        }
+        catch (mkdirError: any) {
+            throw pathSecurity.mapOsError(mkdirError, {
+                path: dirname(relativePath),
+                resolved: dirname(absPath),
+                operation: 'mkdir'
+            });
         }
 
         // Write to temp file then rename atomically
@@ -478,52 +360,19 @@ const create = (options: FileServiceOptions): FileServiceApi => {
             throw pathSecurity.mapOsError(error, {
                 path: relativePath,
                 resolved: absPath,
-                operation: 'writeTextAtomicIfUnchanged'
+                operation: 'writeText'
             });
         }
-
-        return { newHash: nextHash };
     };
 
     /**
-     * Delete file if unchanged
+     * Delete file
      * @internal
      */
-    const deleteIfUnchanged = async (
-        relativePath: string,
-        expectedHash: string
+    const deleteFile = async (
+        relativePath: string
     ): Promise<{ deleted: boolean }> => {
-        // Validate hash format
-        validateHash(expectedHash, 'expectedHash', false);
-
         const absPath = await resolvePath(relativePath);
-
-        // Try to read file directly, handle ENOENT (avoids TOCTOU)
-        let currentHash: string;
-        try {
-            const result = await readText(relativePath);
-            currentHash = result.hash;
-        }
-        catch (error: any) {
-            // File doesn't exist - idempotent success
-            if (error.code === 'NOT_FOUND') {
-                return { deleted: false };
-            }
-            throw error;
-        }
-
-        // Verify hash matches
-        if (currentHash !== expectedHash) {
-            throw pathSecurity.fsError(
-                'HASH_MISMATCH',
-                `Hash mismatch: expected '${expectedHash}', got '${currentHash}'`,
-                {
-                    path: relativePath,
-                    expected: expectedHash,
-                    actual: currentHash
-                }
-            );
-        }
 
         // Delete the file
         try {
@@ -531,10 +380,14 @@ const create = (options: FileServiceOptions): FileServiceApi => {
             return { deleted: true };
         }
         catch (error: any) {
+            // File doesn't exist - idempotent success
+            if (error.code === 'ENOENT') {
+                return { deleted: false };
+            }
             throw pathSecurity.mapOsError(error, {
                 path: relativePath,
                 resolved: absPath,
-                operation: 'deleteIfUnchanged'
+                operation: 'delete'
             });
         }
     };
@@ -547,7 +400,7 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         content: string,
         replacements: Array<{ oldText: string; newText: string }>,
         options?: { requireAll?: boolean }
-    ): { wouldContent: string; wouldHash: string; applied: number } => {
+    ): { wouldContent: string; applied: number } => {
         // Validate replacement inputs (TypeScript already enforces string types)
         for (let i = 0; i < replacements.length; i++) {
             const { oldText } = replacements[i];
@@ -584,52 +437,34 @@ const create = (options: FileServiceOptions): FileServiceApi => {
 
         return {
             wouldContent,
-            wouldHash: computeHashForText(wouldContent),
             applied
         };
     };
 
     /**
-     * Apply text replacements atomically if unchanged
+     * Apply text replacements atomically
      * @internal
      */
-    const applyReplaceFirstIfUnchanged = async (
+    const applyReplaceFirst = async (
         relativePath: string,
-        expectedHash: string,
         replacements: Array<{ oldText: string; newText: string }>,
         options?: { requireAll?: boolean }
-    ): Promise<{ newHash: string; applied: number }> => {
-        // Validate hash format
-        validateHash(expectedHash, 'expectedHash', false);
-
+    ): Promise<{ applied: number }> => {
         // Read current content
-        const { content, hash: currentHash } = await readText(relativePath);
-
-        // Verify hash matches
-        if (currentHash !== expectedHash) {
-            throw pathSecurity.fsError(
-                'HASH_MISMATCH',
-                `Hash mismatch: expected '${expectedHash}', got '${currentHash}'`,
-                {
-                    path: relativePath,
-                    expected: expectedHash,
-                    actual: currentHash
-                }
-            );
-        }
+        const content = await readText(relativePath);
 
         // Preview the changes (validates and applies requireAll logic)
-        const { wouldContent, wouldHash, applied } = previewReplaceFirst(content, replacements, options);
+        const { wouldContent, applied } = previewReplaceFirst(content, replacements, options);
 
-        // If no changes, return current hash
+        // If no changes, don't write
         if (applied === 0) {
-            return { newHash: currentHash, applied: 0 };
+            return { applied: 0 };
         }
 
         // Write the modified content atomically
-        await writeTextAtomicIfUnchanged(relativePath, currentHash, wouldContent);
+        await writeText(relativePath, wouldContent);
 
-        return { newHash: wouldHash, applied };
+        return { applied };
     };
 
     /**
@@ -644,23 +479,20 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         exists,
         stat,
         readText,
-        computeHashForText,
-        computeHashForBytes,
         resolveSafe,
-        writeTextAtomicIfUnchanged,
-        deleteIfUnchanged,
+        writeText,
+        delete: deleteFile,
         previewReplaceFirst,
-        applyReplaceFirstIfUnchanged
+        applyReplaceFirst
     });
 };
 
 /**
  * FileService module for managing files within a boundary
  *
- * Provides safe file operations with hash-based concurrency control
+ * Provides safe file operations with last-write-wins semantics
  * and atomic writes. All operations are confined to a specified boundary
- * directory, preventing path traversal attacks. Uses SHA-256 hashing
- * for content verification and optimistic concurrency control.
+ * directory, preventing path traversal attacks.
  *
  * ## Security Features
  *
@@ -669,31 +501,10 @@ const create = (options: FileServiceOptions): FileServiceApi => {
  * - Symlink handling: detects symlinks and verifies targets remain within boundary
  * - Structured error handling with contextual information (FsError type)
  * - Atomic write operations with collision-resistant temp file naming
- * - Hash-based optimistic concurrency control
- *
- * ## Hashing Contract
- *
- * All hashing operations follow these invariants:
- * - Algorithm: SHA-256
- * - Encoding: UTF-8 (exact bytes, no normalization)
- * - Output format: lowercase hexadecimal string
- * - BOM: Not stripped, included in hash if present in file
- * - Line endings: Preserved as-is (CRLF vs LF affects hash)
- * - No content normalization of any kind
- *
- * ## Optimistic Concurrency Limitations
- *
- * Write and delete operations use optimistic locking with hash verification.
- * Optimistic locking mitigates but does not eliminate races between verification
- * and mutation. There is a small window where another process could modify the file
- * after hash verification but before the write/delete completes.
- *
- * This is an inherent limitation of POSIX filesystem semantics. For strict guarantees,
- * use external locking mechanisms (e.g., advisory file locks, distributed locks).
  *
  * ## Replacement Semantics
  *
- * Text replacements via previewReplaceFirst and applyReplaceFirstIfUnchanged:
+ * Text replacements via previewReplaceFirst and applyReplaceFirst:
  * - Applied sequentially to in-memory content (not the file)
  * - Each replacement affects subsequent replacements
  * - Only first occurrence of oldText is replaced per replacement entry
@@ -708,7 +519,7 @@ const create = (options: FileServiceOptions): FileServiceApi => {
  *
  * ## Idempotent Delete
  *
- * deleteIfUnchanged returns {deleted: false} when the file doesn't exist.
+ * delete() returns {deleted: false} when the file doesn't exist.
  * This is intentional - the desired end state (file not existing) is achieved.
  * Callers should treat this as success, not an error condition.
  *

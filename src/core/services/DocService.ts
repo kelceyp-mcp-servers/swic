@@ -136,7 +136,6 @@ interface CreatedocInput {
  */
 interface CreatedocResult {
     id: docId;
-    hash: string;
     path: docPath;
 }
 
@@ -146,7 +145,6 @@ interface CreatedocResult {
 interface ReaddocResult {
     address: docAddress;
     content: string;
-    hash: string;
     frontMatter?: docFrontMatter;
     bodyContent: string;
     path: docPath;
@@ -157,7 +155,6 @@ interface ReaddocResult {
  * Result of editing a doc
  */
 interface EditdocResult {
-    newHash: string;
     applied: number;
 }
 
@@ -176,7 +173,6 @@ interface docListItem {
     id: docId;
     path: docPath;
     synopsis?: string;
-    hash?: string;
     modifiedAt?: Date;
     /**
      * Override status when same path exists in both scopes:
@@ -230,7 +226,7 @@ interface IndexData {
 
 /**
  * docService API
- * Manages doc lifecycle operations with hash-based concurrency control
+ * Manages doc lifecycle operations with last-write-wins semantics
  */
 interface DocServiceApi {
     /**
@@ -238,10 +234,10 @@ interface DocServiceApi {
      *
      * Uses Method 1 (path-based) addressing
      * Generates unique ID automatically
-     * Writes content atomically with hash verification
+     * Writes content atomically
      *
      * @param input - doc creation input with path and content
-     * @returns Generated ID and content hash
+     * @returns Generated ID
      * @throws {FsError} doc_ALREADY_EXISTS if path already occupied
      * @throws {FsError} INVALID_PATH_FORMAT if path format is invalid
      * @throws {FsError} BOUNDARY_VIOLATION if path escapes boundary
@@ -262,43 +258,36 @@ interface DocServiceApi {
     read(addr: docAddress): Promise<ReaddocResult>;
 
     /**
-     * Edit latest version using optimistic concurrency
+     * Edit latest version
      *
      * Applies array of edit operations sequentially
-     * Uses hash-based optimistic locking
+     * Uses last-write-wins semantics
      * Only operates on latest version (no version parameter allowed)
      *
      * @param addr - doc address (without version)
-     * @param baseHash - Expected current hash for concurrency control
      * @param edits - Array of edit operations to apply sequentially
-     * @returns New hash and count of operations applied
-     * @throws {FsError} HASH_MISMATCH if content changed since baseHash
+     * @returns Count of operations applied
      * @throws {FsError} doc_NOT_FOUND if doc doesn't exist
      * @throws {FsError} VALIDATION_ERROR if edit operations are invalid
      */
     editLatest(
         addr: Omit<docAddress, 'version'>,
-        baseHash: string,
         edits: EditOp[]
     ): Promise<EditdocResult>;
 
     /**
      * Delete doc from working copy
      *
-     * Uses hash-based optimistic locking
+     * Uses last-write-wins semantics
      * Idempotent: returns {deleted: false} if already missing
      * Only operates on latest version
      * Historical versions remain in version control
      *
      * @param addr - doc address (without version)
-     * @param expectedHash - Expected hash for concurrency control
      * @returns Deletion result (idempotent when already missing)
-     * @throws {FsError} HASH_MISMATCH if content changed since expectedHash
-     * @throws {FsError} doc_NOT_FOUND if doc doesn't exist
      */
     deleteLatest(
-        addr: Omit<docAddress, 'version'>,
-        expectedHash: string
+        addr: Omit<docAddress, 'version'>
     ): Promise<DeletedocResult>;
 
     /**
@@ -306,7 +295,6 @@ interface DocServiceApi {
      *
      * Returns all docs with synopsis from front matter
      * Optionally filters by path prefix
-     * Results include hash for cache invalidation
      *
      * @param params - Scope and optional path prefix filter
      * @returns Array of doc list items with metadata
@@ -458,64 +446,41 @@ const create = (options: docServiceOptions): DocServiceApi => {
     };
 
     /**
-     * Read index file with hash
+     * Read index file
      * Returns empty index if file doesn't exist
      * @internal
      */
-    const readIndex = async (scope: Scope): Promise<{ index: IndexData; hash: string }> => {
+    const readIndex = async (scope: Scope): Promise<IndexData> => {
         const indexPath = getIndexPath(scope);
         const fileService = getFileService(scope);
 
         try {
-            const { content, hash } = await fileService.readText(indexPath);
+            const content = await fileService.readText(indexPath);
             const index = JSON.parse(content) as IndexData;
-            return { index, hash };
+            return index;
         }
         catch (error: any) {
             // If index doesn't exist, return empty index
             if (error.code === 'NOT_FOUND') {
-                return { index: {}, hash: '' };
+                return {};
             }
             throw error;
         }
     };
 
     /**
-     * Write index file with hash verification
-     * Retries once on HASH_MISMATCH (optimistic concurrency)
+     * Write index file
+     * Uses last-write-wins semantics
      * @internal
      */
     const writeIndex = async (
         scope: Scope,
-        index: IndexData,
-        baseHash: string
-    ): Promise<{ hash: string }> => {
+        index: IndexData
+    ): Promise<void> => {
         const indexPath = getIndexPath(scope);
         const fileService = getFileService(scope);
         const content = JSON.stringify(index, null, 2);
-
-        try {
-            const { newHash } = await fileService.writeTextAtomicIfUnchanged(
-                indexPath,
-                baseHash,
-                content
-            );
-            return { hash: newHash };
-        }
-        catch (error: any) {
-            if (error.code === 'HASH_MISMATCH') {
-                const { index: freshIndex, hash: freshHash } = await readIndex(scope);
-                const mergedIndex = { ...freshIndex, ...index };
-                const mergedContent = JSON.stringify(mergedIndex, null, 2);
-                const { newHash } = await fileService.writeTextAtomicIfUnchanged(
-                    indexPath,
-                    freshHash,
-                    mergedContent
-                );
-                return { hash: newHash };
-            }
-            throw error;
-        }
+        await fileService.writeText(indexPath, content);
     };
 
     /**
@@ -786,19 +751,14 @@ const create = (options: docServiceOptions): DocServiceApi => {
             await folderService.ensureDir(parentPath);
         }
 
-        const { newHash } = await fileService.writeTextAtomicIfUnchanged(
-            path,
-            '',
-            content
-        );
+        await fileService.writeText(path, content);
 
-        const { index, hash: indexHash } = await readIndex(scope);
+        const index = await readIndex(scope);
         index[id] = path;
-        await writeIndex(scope, index, indexHash);
+        await writeIndex(scope, index);
 
         return {
             id,
-            hash: newHash,
             path
         };
     };
@@ -814,7 +774,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
         // Read file content
         const fileService = getFileService(scope);
-        const { content, hash } = await fileService.readText(relativePath);
+        const content = await fileService.readText(relativePath);
 
         // Parse front matter
         const { frontMatter, bodyContent, rawFrontMatter: _rawFrontMatter } = parseFrontMatter(content);
@@ -828,7 +788,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             canonicalPath = normalized.path;
 
             // Lookup ID from index
-            const { index } = await readIndex(scope);
+            const index = await readIndex(scope);
             const foundId = Object.keys(index).find(id => index[id] === canonicalPath);
             if (!foundId) {
                 return fail('doc_NOT_FOUND', `doc exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope });
@@ -839,7 +799,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             canonicalId = addr.id;
 
             // Lookup path from index
-            const { index } = await readIndex(scope);
+            const index = await readIndex(scope);
             const foundPath = index[canonicalId];
             if (!foundPath) {
                 return fail('doc_NOT_FOUND', `No doc with ID '${canonicalId}'`, { id: canonicalId, scope });
@@ -854,7 +814,6 @@ const create = (options: docServiceOptions): DocServiceApi => {
         return {
             address: addr,
             content,
-            hash,
             frontMatter,
             bodyContent,
             path: canonicalPath,
@@ -863,13 +822,12 @@ const create = (options: docServiceOptions): DocServiceApi => {
     };
 
     /**
-     * Edit latest version using optimistic concurrency
+     * Edit latest version
      * Handles optional scope resolution
      * @internal
      */
     const editLatest = async (
         addr: Omit<docAddress, 'version'>,
-        baseHash: string,
         edits: EditOp[]
     ): Promise<EditdocResult> => {
         // Resolve address to file path and scope
@@ -877,11 +835,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
         // Read current content
         const fileService = getFileService(scope);
-        const { content: currentContent, hash: currentHash } = await fileService.readText(relativePath);
-
-        if (currentHash !== baseHash) {
-            fail('HASH_MISMATCH', `Expected hash '${baseHash}', got '${currentHash}'`, { expected: baseHash, actual: currentHash });
-        }
+        const currentContent = await fileService.readText(relativePath);
 
         // Apply edits sequentially
         let newContent = currentContent;
@@ -895,19 +849,15 @@ const create = (options: docServiceOptions): DocServiceApi => {
             }
         }
 
-        // If no changes, return current hash
+        // If no changes, skip write
         if (appliedCount === 0) {
-            return { newHash: currentHash, applied: 0 };
+            return { applied: 0 };
         }
 
         // Write updated content
-        const { newHash } = await fileService.writeTextAtomicIfUnchanged(
-            relativePath,
-            currentHash,
-            newContent
-        );
+        await fileService.writeText(relativePath, newContent);
 
-        return { newHash, applied: appliedCount };
+        return { applied: appliedCount };
     };
 
     /**
@@ -916,8 +866,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
      * @internal
      */
     const deleteLatest = async (
-        addr: Omit<docAddress, 'version'>,
-        expectedHash: string
+        addr: Omit<docAddress, 'version'>
     ): Promise<DeletedocResult> => {
         // Resolve address to file path and scope first
         const { rel: relativePath, scope } = await resolveAddress(addr as docAddress);
@@ -931,7 +880,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             else if (addr.kind === 'path') {
                 const pathAddr = addr as Omit<AddressPath, 'version'>;
                 const normalized = normalizePathAddress({ ...pathAddr, scope } as AddressPath & { scope: Scope });
-                const { index } = await readIndex(scope);
+                const index = await readIndex(scope);
                 const foundId = Object.keys(index).find(id => index[id] === normalized.path);
                 if (!foundId) {
                     return fail('doc_NOT_FOUND', `doc not in index: '${normalized.path}'`, { path: normalized.path, scope });
@@ -947,7 +896,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
         const fileService = getFileService(scope);
         let deleted = false;
         try {
-            const result = await fileService.deleteIfUnchanged(relativePath, expectedHash);
+            const result = await fileService.delete(relativePath);
             deleted = result.deleted;
         }
         catch (error: any) {
@@ -960,10 +909,10 @@ const create = (options: docServiceOptions): DocServiceApi => {
         }
 
         // Always update index to remove stale entries
-        const { index, hash: indexHash } = await readIndex(scope);
+        const index = await readIndex(scope);
         if (index[docId]) {
             delete index[docId];
-            await writeIndex(scope, index, indexHash);
+            await writeIndex(scope, index);
         }
 
         return { deleted };
@@ -1028,8 +977,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
         let index: IndexData;
 
         try {
-            const result = await readIndex(scope);
-            index = result.index;
+            index = await readIndex(scope);
         }
         catch (error: any) {
             // If index doesn't exist, return empty list
@@ -1048,7 +996,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
             try {
                 if (includeContent) {
-                    const { content, hash } = await fileService.readText(path);
+                    const content = await fileService.readText(path);
                     const stats = await fileService.stat(path);
                     const { frontMatter } = parseFrontMatter(content);
 
@@ -1057,7 +1005,6 @@ const create = (options: docServiceOptions): DocServiceApi => {
                         id: id as docId,
                         path,
                         synopsis: frontMatter?.synopsis as string | undefined,
-                        hash,
                         modifiedAt: stats.mtime
                     });
                 }

@@ -22,7 +22,7 @@ const create = (services: CoreServices): DocToolApi => {
                 z.array(z.string()).describe('Array of doc IDs or paths for bulk read')
             ]).describe('doc identifier(s) - ID or path, single or array'),
             scope: z.enum(['project', 'shared']).optional().describe('Optional scope. If omitted, auto-resolves (checks project first, then shared, or infers from ID prefix)'),
-            includeMetadata: z.boolean().optional().default(false).describe('Include ID, path, and hash metadata header for each doc')
+            includeMetadata: z.boolean().optional().default(false).describe('Include ID and path metadata header for each doc')
         }
     };
 
@@ -54,7 +54,6 @@ const create = (services: CoreServices): DocToolApi => {
             if (includeMetadata) {
                 parts.push(`ID: ${doc.id}`);
                 parts.push(`Path: ${doc.path}`);
-                parts.push(`Hash: ${doc.hash}`);
                 parts.push('---');
             }
 
