@@ -45,11 +45,6 @@ const create = (services: CoreServices) => {
             .flag('scope', 's')
         )
         .param((p) => p
-            .name('hash')
-            .type('string')
-            .flag('hash', 'h')
-        )
-        .param((p) => p
             .name('confirm')
             .type('boolean')
             .flag('confirm', 'y')
@@ -63,7 +58,7 @@ const create = (services: CoreServices) => {
             return true;
         })
         .run(async (ctx) => {
-            const { identifier, scope, hash, confirm } = ctx.params;
+            const { identifier, scope, confirm } = ctx.params;
 
             // Parse comma-separated identifiers and deduplicate
             const identifiers = identifier.includes(',')
@@ -138,13 +133,11 @@ const create = (services: CoreServices) => {
             for (const doc of docs) {
                 const id = identifiers[docs.indexOf(doc)];
                 const isId = docAddressResolver.isdocId(id);
-                const expectedHash = hash || doc.hash;
 
                 const result = await services.DocService.deleteLatest(
                     (isId
                         ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id }
-                        : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }) as any,
-                    expectedHash
+                        : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: id }) as any
                 );
 
                 results.push({ id: doc.id, deleted: result.deleted });

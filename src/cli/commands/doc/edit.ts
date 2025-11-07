@@ -48,11 +48,6 @@ const create = (services: CoreServices) => {
             .type('string')
             .flag('mode', 'm')
         )
-        .param((p) => p
-            .name('hash')
-            .type('string')
-            .flag('hash', 'h')
-        )
         .preValidate((ctx) => {
             const { scope, mode, interactive, old, new: newText } = ctx.argv.flags;
 
@@ -74,19 +69,17 @@ const create = (services: CoreServices) => {
             return true;
         })
         .run(async (ctx) => {
-            const { identifier, scope, interactive, old, new: newText, mode, hash } = ctx.params;
+            const { identifier, scope, interactive, old, new: newText, mode } = ctx.params;
 
             // Auto-detect if identifier is an ID or path using new resolver
             const isId = docAddressResolver.isdocId(identifier);
 
-            // Read doc to get current content and hash
+            // Read doc to get current content
             const doc = await services.DocService.read(
                 isId
                     ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
                     : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }
             );
-
-            const baseHash = hash || doc.hash;
             let edits: Array<any> = [];
 
             if (interactive) {
@@ -142,12 +135,9 @@ const create = (services: CoreServices) => {
                 (isId
                     ? { kind: 'id', scope: scope as 'project' | 'shared' | undefined, id: identifier }
                     : { kind: 'path', scope: scope as 'project' | 'shared' | undefined, path: identifier }) as any,
-                baseHash,
                 edits
             );
 
-            // Output new hash
-            ctx.stdio.stdout.write(`${result.newHash}\n`);
             ctx.logger.info(`Applied ${result.applied} edit(s) to doc: ${doc.id}`);
         })
         .onError({ exitCode: 1, showStack: 'auto' })

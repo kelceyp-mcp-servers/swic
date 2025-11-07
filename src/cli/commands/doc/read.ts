@@ -79,7 +79,6 @@ const create = (services: CoreServices) => {
                 if (meta) {
                     ctx.stdio.stdout.write(`ID: ${doc.id}\n`);
                     ctx.stdio.stdout.write(`Path: ${doc.path}\n`);
-                    ctx.stdio.stdout.write(`Hash: ${doc.hash}\n`);
                     ctx.stdio.stdout.write('---\n');
                 }
 
