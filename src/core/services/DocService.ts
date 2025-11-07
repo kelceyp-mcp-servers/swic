@@ -666,7 +666,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
                 fail('INVALID_ID_FORMAT', `ID must match pattern doc\\d{3,} or sdoc\\d{3,}, got '${id}'`, { id });
             }
 
-            const { index } = await readIndex(scope);
+            const index = await readIndex(scope);
 
             if (!index[id]) {
                 fail('doc_NOT_FOUND', `No doc with ID '${id}' in scope '${scope}'`, { id, scope });
@@ -691,7 +691,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
             fail('INVALID_SCOPE', `Scope must be 'project' or 'shared', got '${scope}'`, { scope });
         }
 
-        const { index } = await readIndex(scope);
+        const index = await readIndex(scope);
 
         // Determine prefix based on scope
         const prefix = scope === 'project' ? 'doc' : 'sdoc';
