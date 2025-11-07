@@ -8,7 +8,6 @@ type FsErrorCode =
     | 'BOUNDARY_VIOLATION'
     | 'DIRECTORY_NOT_EMPTY'
     | 'NOT_FOUND'
-    | 'HASH_MISMATCH'
     | 'VALIDATION_ERROR'
     | 'FS_ERROR';
 
@@ -257,7 +256,6 @@ const mapOsError = (error: any, context?: { path?: string; resolved?: string; op
  * - `BOUNDARY_VIOLATION`: Path escapes boundary (including symlink targets)
  * - `NOT_FOUND`: File or directory doesn't exist (ENOENT)
  * - `DIRECTORY_NOT_EMPTY`: Directory has contents (ENOTEMPTY)
- * - `HASH_MISMATCH`: Content hash doesn't match expected value
  * - `FS_ERROR`: OS-level errors (permissions, busy resource, etc.)
  *
  * ## Path Normalization Guarantees

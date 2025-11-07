@@ -1078,10 +1078,9 @@ const create = (options: docServiceOptions): DocServiceApi => {
  *
  * ## Concurrency Control
  *
- * Edit and delete operations use hash-based optimistic locking:
- * - Read doc to get current hash
- * - Perform operation with hash as expectedHash/baseHash
- * - Operation fails with HASH_MISMATCH if content changed
+ * Edit and delete operations use last-write-wins semantics:
+ * - Operations always succeed if the doc exists
+ * - No concurrency control - last operation wins
  *
  * ## Front Matter
  *
