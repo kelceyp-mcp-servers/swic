@@ -493,7 +493,7 @@ export const createTemplateService = (
      * Get index file path for scope
      * @internal
      */
-    const getIndexPath = (scope: Scope): string => {
+    const getIndexPath = (_scope: Scope): string => {
         return INDEX_FILENAME;
     };
 
@@ -527,6 +527,7 @@ export const createTemplateService = (
             return { valid: false, reason: 'Path cannot contain ..' };
         }
 
+        // eslint-disable-next-line no-control-regex
         const invalidChars = /[<>:"|?*\x00]/;
         if (invalidChars.test(path)) {
             return { valid: false, reason: 'Path contains invalid characters' };
@@ -749,25 +750,25 @@ export const createTemplateService = (
             const before = result;
 
             switch (op.op) {
-                case 'replaceOnce':
-                    result = result.replace(op.oldText, op.newText);
-                    break;
+            case 'replaceOnce':
+                result = result.replace(op.oldText, op.newText);
+                break;
 
-                case 'replaceAll': {
-                    const escaped = op.oldText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    result = result.replace(new RegExp(escaped, 'g'), op.newText);
-                    break;
-                }
+            case 'replaceAll': {
+                const escaped = op.oldText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                result = result.replace(new RegExp(escaped, 'g'), op.newText);
+                break;
+            }
 
-                case 'replaceRegex': {
-                    const regex = new RegExp(op.pattern, op.flags || '');
-                    result = result.replace(regex, op.replacement);
-                    break;
-                }
+            case 'replaceRegex': {
+                const regex = new RegExp(op.pattern, op.flags || '');
+                result = result.replace(regex, op.replacement);
+                break;
+            }
 
-                case 'replaceAllContent':
-                    result = op.content;
-                    break;
+            case 'replaceAllContent':
+                result = op.content;
+                break;
             }
 
             if (result !== before || op.op === 'replaceAllContent') {
@@ -1010,7 +1011,7 @@ export const createTemplateService = (
 
     const readMany = async (
         addresses: TemplateAddress[],
-        includeMetadata?: boolean
+        _includeMetadata?: boolean
     ): Promise<ReadTemplateResult[]> => {
         // Deduplicate by serializing addresses
         const unique = Array.from(
