@@ -1,6 +1,6 @@
 {
   "name": "@kelceyp/swic",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Story Workflow Integration Controller - MCP server for managing stories, subtasks, and pipelines",
   "type": "module",
   "main": "dist/server/Server.js",
