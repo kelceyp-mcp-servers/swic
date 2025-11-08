@@ -20,7 +20,6 @@ const render = (services: CoreServices) => {
             .name('param')
             .type('string')
             .flag('param', 'p')
-            .multi()
         )
         .preValidate((ctx) => {
             // Scope validation
@@ -35,15 +34,16 @@ const render = (services: CoreServices) => {
         .run(async (ctx) => {
             const { identifier, scope, param } = ctx.params;
 
-            // Parse parameters from --param key=value format
+            // Parse parameters from --param key=value,key2=value2 format
             const params: Record<string, string | number | boolean> = {};
 
             if (param) {
-                const paramList = Array.isArray(param) ? param : [param];
+                // Split by comma to handle multiple params
+                const paramList = param.split(',').map((s: string) => s.trim()).filter(Boolean);
                 for (const p of paramList) {
                     const eqIndex = p.indexOf('=');
                     if (eqIndex === -1) {
-                        throw new Error(`Invalid parameter format: ${p}. Use --param key=value`);
+                        throw new Error(`Invalid parameter format: ${p}. Use --param key=value or --param key1=value1,key2=value2`);
                     }
 
                     const key = p.slice(0, eqIndex).trim();

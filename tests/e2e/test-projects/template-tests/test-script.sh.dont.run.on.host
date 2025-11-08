@@ -172,7 +172,7 @@ fi
 # Test 6: Render template with parameters
 log_step "Test 6: Render template with required parameters"
 
-RENDERED=$(npx swic template render "$TEMPLATE_ID" --param storyId=123 --param continue=false)
+RENDERED=$(npx swic template render "$TEMPLATE_ID" --param "storyId=123,continue=false")
 
 if [ $? -eq 0 ]; then
     log_success "Template render successful"
@@ -185,7 +185,7 @@ fi
 # Test 7: Render with continue=true
 log_step "Test 7: Render template with continue=true"
 
-RENDERED_CONTINUE=$(npx swic template render "$TEMPLATE_ID" --param storyId=456 --param continue=true)
+RENDERED_CONTINUE=$(npx swic template render "$TEMPLATE_ID" --param "storyId=456,continue=true")
 
 if [ $? -eq 0 ]; then
     log_success "Template render with continue=true successful"
@@ -198,7 +198,7 @@ fi
 # Test 8: Render with missing required parameter (should fail)
 log_step "Test 8: Render without required parameter (should fail)"
 
-if npx swic template render "$TEMPLATE_ID" --param continue=false 2>&1 | grep -q "Missing required parameter"; then
+if npx swic template render "$TEMPLATE_ID" --param "continue=false" 2>&1 | grep -q "Missing required parameter"; then
     log_success "Correctly rejected missing required parameter"
 else
     log_failure "Should have rejected missing required parameter"
@@ -376,7 +376,7 @@ Enabled: {{enabled}}'
 TYPE_TEST_ID=$(echo "$TYPE_TEST_TEMPLATE" | npx swic template create test/types.md -c -)
 
 # Render with string values that should be coerced
-TYPE_RENDERED=$(npx swic template render "$TYPE_TEST_ID" --param count=42 --param enabled=true)
+TYPE_RENDERED=$(npx swic template render "$TYPE_TEST_ID" --param "count=42,enabled=true")
 
 if [ $? -eq 0 ]; then
     log_success "Type coercion successful"
@@ -389,7 +389,7 @@ fi
 # Test 18: Invalid type coercion (should fail)
 log_step "Test 18: Invalid type coercion (should fail)"
 
-if npx swic template render "$TYPE_TEST_ID" --param count=abc --param enabled=true 2>&1 | grep -q "INVALID_PARAM_TYPE"; then
+if npx swic template render "$TYPE_TEST_ID" --param "count=abc,enabled=true" 2>&1 | grep -q "INVALID_PARAM_TYPE"; then
     log_success "Correctly rejected invalid number"
 else
     log_failure "Should have rejected invalid number"

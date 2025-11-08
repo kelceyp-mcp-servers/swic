@@ -21,15 +21,15 @@ abstract: desired behaviours interacting with the user
 
 docs are documents that augment our base knowledge with project specific knowledge as well as knowledge the user shares across several projects. We call these 'docs' as they are 'loaded' in the sessions where they are needed.
 
-They are located in:
-- `.swic/docs/` - project-specific docs
-- `~/.swic/docs/` - docs shared across multiple projects
+Access docs using SWIC MCP tools:
+- Project-specific docs: `mcp__swic__doc_list: { scope: "project" }`
+- Shared docs: `mcp__swic__doc_list: { scope: "shared" }`
 
 ## Story Process
 
 We work in thin vertical slices that we call stories. We try to finesse over the first few stories so that we have an exemplar to refer to for subsequent slices.
 
-Instead of JIRA or other tracking systems, we use a .swic/stories/ folder in the project root and a folder structure to specify state.
+Instead of JIRA or other tracking systems, we use SWIC docs with story paths to track state.
 
 Stories flow: **To-Do → In-Progress → Review → Done**
 
@@ -42,7 +42,9 @@ Structure:
     └── {state}/    # To-Do → In-Progress → Review → Done
 ```
 
-The details for the various documents can be found in ~/.swic/docs/story-documents/
+**Current Implementation:** Stories are currently implemented as SWIC docs with path-based naming conventions (e.g., `stories/001-name/story.md`). This is temporary scaffolding - eventually stories will be a proper object type with dedicated MCP tools as defined in doc017 (swic/spec/stories.md). Until then, use `mcp__swic__doc_create`, `mcp__swic__doc_edit`, etc. to manage story documents.
+
+The details for the various documents can be found in shared docs: sdoc038 (subtask-structure.md), sdoc039 (spec-structure.md), sdoc040 (design-structure.md)
 
 ## Workflows:
 
@@ -56,7 +58,18 @@ We typically do work with a supervisor agent orchestrating a number of specialis
 
 Each phase uses subagents. Iterations continue until approval. Context management: stop early if running low, report incomplete.
 
-Documents describing the workflows are in ~/.swic/docs/workflows/
+Workflow documents available via SWIC: sdoc012 (create-design.md), sdoc013 (do-subtask.md), sdoc014 (init-story.md), sdoc015 (create-spec.md), sdoc016 (create-subtask.md)
+
+## Workflow Templates
+
+SWIC provides workflow templates (doc036, doc037) that currently rely on Claude acting as the template renderer:
+
+- **doc036** (templates/supervise-execution.md): Template for supervising story execution
+- **doc037** (templates/supervise-create-story.md): Template for supervising story creation
+
+These templates contain placeholders like `{{story-id}}` and `{{story-name}}` that Claude substitutes when rendering prompts for workflow orchestration.
+
+**Current Implementation:** This is temporary scaffolding - Claude acts as the renderer because the templating system (defined in doc012: swic/spec/templates.md) is not yet implemented. Eventually SWIC will have proper template tools that handle variable substitution, conditional rendering, and template composition.
 
 ## Interviews
 
@@ -80,12 +93,12 @@ If running low on context during subtask work:
 
 SWIC (Story Workflow Integration Controller) is an MCP server for managing stories, subtasks, and pipelines through structured workflows.
 
-See: @.swic/docs/swic/index.md
+See: doc018 (swic/index.md)
 
-Note: Direct filesystem access will be replaced with MCP tools and automated workflows as the SWIC system matures.
+**Important:** Avoid filesystem access for swic docs and use the appropriate mcp tools instead.
 
 ## Operations
 
 How to build, configure, test, and troubleshoot the SWIC MCP server. Covers building dist, MCP configuration, finding logs, and testing with `claude -p`.
 
-See: [.swic/docs/operations.md](.swic/docs/operations.md)
+See operations documentation in project docs (use `mcp__swic__doc_list` to find)
