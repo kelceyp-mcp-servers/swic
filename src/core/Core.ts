@@ -118,7 +118,7 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
     const projectTemplateFolderService = FolderService.create({boundaryDir: projectTemplateBoundary});
     const sharedTemplateFolderService = FolderService.create({boundaryDir: sharedTemplateBoundary});
 
-    const docService = DocService.create({
+    const docServiceApi = DocService.create({
         fileServiceByScope: {
             project: projectDocFileService,
             shared: sharedDocFileService
@@ -130,18 +130,16 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
         indexFilename: INDEX_FILENAME
     });
 
-    const templateService = createTemplateService({
+    const templateServiceApi = createTemplateService({
         projectFileService: projectTemplateFileService,
         projectFolderService: projectTemplateFolderService,
         sharedFileService: sharedTemplateFileService,
         sharedFolderService: sharedTemplateFolderService
     });
 
-    // BUG FIX: The return statement values were swapped in the original template implementation
-    // Swap them to correctly map property names to service APIs
     return Object.freeze({
-        DocService: templateService,
-        TemplateService: docService
+        DocService: docServiceApi,
+        TemplateService: templateServiceApi
     });
 };
 
