@@ -1,0 +1,10 @@
+{
+  "name": "swic-mcp-local-test",
+  "version": "1.0.0",
+  "description": "Local test for SWIC MCP configuration",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@kelceyp/swic": "^0.1.6"
+  }
+}

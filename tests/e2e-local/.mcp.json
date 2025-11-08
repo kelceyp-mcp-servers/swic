@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "swic-dev": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "run",
+        "../../dist/server/Server.js"
+      ],
+      "env": {}
+    },
+    "swic-npm": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "swic-mcp"
+      ],
+      "env": {}
+    }
+  }
+}
