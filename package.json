@@ -1,7 +1,7 @@
 {
   "name": "@kelceyp/swic",
-  "version": "0.2.2",
-  "description": "Story Workflow Integration Controller - MCP server for managing stories, subtasks, and pipelines",
+  "version": "0.2.6",
+  "description": "Story Workflow Inject Context - MCP server for managing stories, subtasks, and pipelines",
   "type": "module",
   "main": "dist/server/Server.js",
   "bin": {
@@ -25,7 +25,7 @@
     "lint:fix": "eslint src scripts archive --ext .ts --fix"
   },
   "dependencies": {
-    "@kelceyp/clibuilder": "^0.2.0",
+    "@kelceyp/clibuilder": "^0.2.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@types/handlebars": "^4.0.40",
     "@types/yaml": "^1.9.6",
