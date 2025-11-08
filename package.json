@@ -26,9 +26,12 @@
   },
   "dependencies": {
     "@kelceyp/clibuilder": "^0.2.0",
-    "@kelceyp/swic": "^0.1.10",
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "debug": "^4.4.3"
+    "@types/handlebars": "^4.0.40",
+    "@types/yaml": "^1.9.6",
+    "debug": "^4.4.3",
+    "handlebars": "^4.7.8",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/bun": "latest",

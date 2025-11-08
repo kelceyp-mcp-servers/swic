@@ -5,6 +5,8 @@ import FileService from './services/FileService.js';
 import FolderService from './services/FolderService.js';
 import DocService from './services/DocService.js';
 import type { DocServiceApi } from './services/DocService.js';
+import { createTemplateService } from './services/TemplateService.js';
+import type { TemplateServiceApi } from './services/TemplateService.js';
 import FindProjectRoot from './utils/findProjectRoot.js';
 
 interface CoreOptions {
@@ -14,6 +16,7 @@ interface CoreOptions {
 
 interface CoreServices {
     DocService: DocServiceApi;
+    TemplateService: TemplateServiceApi;
 }
 
 interface DataDirs {
@@ -23,6 +26,7 @@ interface DataDirs {
 
 // Constants
 const DOC_SUBDIR = 'docs';
+const TEMPLATE_SUBDIR = 'templates';
 const INDEX_FILENAME = '.index.json';
 
 /**
@@ -76,7 +80,10 @@ const lazilyGetDataDirs = (): DataDirs => {
     // Ensure both directories exist (creates if needed)
     const projectDocBoundary = `${projectBoundaryDir}/${DOC_SUBDIR}`;
     const sharedDocBoundary = `${sharedBoundaryDir}/${DOC_SUBDIR}`;
+    const projectTemplateBoundary = `${projectBoundaryDir}/${TEMPLATE_SUBDIR}`;
+    const sharedTemplateBoundary = `${sharedBoundaryDir}/${TEMPLATE_SUBDIR}`;
     ensureBoundariesSync(projectDocBoundary, sharedDocBoundary);
+    ensureBoundariesSync(projectTemplateBoundary, sharedTemplateBoundary);
 
     return {
         projectDataDir: projectBoundaryDir,
@@ -96,26 +103,43 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
 
     const projectDocBoundary = `${projectBoundaryDir}/${DOC_SUBDIR}`;
     const sharedDocBoundary = `${sharedBoundaryDir}/${DOC_SUBDIR}`;
+    const projectTemplateBoundary = `${projectBoundaryDir}/${TEMPLATE_SUBDIR}`;
+    const sharedTemplateBoundary = `${sharedBoundaryDir}/${TEMPLATE_SUBDIR}`;
 
-    const projectFileService = FileService.create({boundaryDir: projectDocBoundary});
-    const sharedFileService = FileService.create({boundaryDir: sharedDocBoundary});
-    const projectFolderService = FolderService.create({boundaryDir: projectDocBoundary});
-    const sharedFolderService = FolderService.create({boundaryDir: sharedDocBoundary});
+    // Doc services
+    const projectDocFileService = FileService.create({boundaryDir: projectDocBoundary});
+    const sharedDocFileService = FileService.create({boundaryDir: sharedDocBoundary});
+    const projectDocFolderService = FolderService.create({boundaryDir: projectDocBoundary});
+    const sharedDocFolderService = FolderService.create({boundaryDir: sharedDocBoundary});
+
+    // Template services
+    const projectTemplateFileService = FileService.create({boundaryDir: projectTemplateBoundary});
+    const sharedTemplateFileService = FileService.create({boundaryDir: sharedTemplateBoundary});
+    const projectTemplateFolderService = FolderService.create({boundaryDir: projectTemplateBoundary});
+    const sharedTemplateFolderService = FolderService.create({boundaryDir: sharedTemplateBoundary});
 
     const docService = DocService.create({
         fileServiceByScope: {
-            project: projectFileService,
-            shared: sharedFileService
+            project: projectDocFileService,
+            shared: sharedDocFileService
         },
         folderServiceByScope: {
-            project: projectFolderService,
-            shared: sharedFolderService
+            project: projectDocFolderService,
+            shared: sharedDocFolderService
         },
         indexFilename: INDEX_FILENAME
     });
 
+    const templateService = createTemplateService({
+        projectFileService: projectTemplateFileService,
+        projectFolderService: projectTemplateFolderService,
+        sharedFileService: sharedTemplateFileService,
+        sharedFolderService: sharedTemplateFolderService
+    });
+
     return Object.freeze({
-        DocService: docService
+        DocService: docService,
+        TemplateService: templateService
     });
 };
 

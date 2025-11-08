@@ -30,6 +30,7 @@ echo ""
 TEST_PROJECTS=(
     "npm-project-fresh"
     "npm-project-existing-swic"
+    "template-tests"
 )
 
 # Run each test project

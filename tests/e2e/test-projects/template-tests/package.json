@@ -1,0 +1,9 @@
+{
+  "name": "swic-e2e-template-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E2E test project for SWIC template system",
+  "scripts": {
+    "test": "bash test-script.sh"
+  }
+}

@@ -1,0 +1,409 @@
+#!/usr/bin/env bash
+
+# ⚠️  DESTRUCTIVE TEST SCRIPT - CONTAINER ONLY ⚠️
+#
+# E2E Test: Template System
+# Tests template CRUD operations, rendering, parameter validation, and metadata
+#
+# This script deletes ~/.swic and .swic directories!
+# It MUST only run inside Docker containers.
+
+set -e  # Exit on error
+
+# Source shared safety check
+source "$(dirname "$0")/../../lib/safety-check.sh"
+verify_container_environment
+
+TEST_NAME="template-tests"
+FAILED=0
+
+echo "========================================="
+echo "Test: $TEST_NAME"
+echo "========================================="
+echo ""
+
+# Function to log test steps
+log_step() {
+    echo "➤ $1"
+}
+
+# Function to log success
+log_success() {
+    echo "  ✓ $1"
+}
+
+# Function to log failure and mark test as failed
+log_failure() {
+    echo "  ✗ $1"
+    FAILED=1
+}
+
+# Function to verify file exists
+verify_file() {
+    if [ -f "$1" ]; then
+        log_success "File exists: $1"
+    else
+        log_failure "File missing: $1"
+    fi
+}
+
+# Function to verify string contains substring
+verify_contains() {
+    if echo "$1" | grep -q "$2"; then
+        log_success "Output contains: $2"
+    else
+        log_failure "Output missing: $2"
+        echo "  Got: $1"
+    fi
+}
+
+# Configure npm
+if [ -n "${SWIC_CLIBUILDER_READ_ACCESS:-}" ]; then
+    export NODE_AUTH_TOKEN="${SWIC_CLIBUILDER_READ_ACCESS}"
+    npm config set @kelceyp:registry https://registry.npmjs.org/ --location=project
+    npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}" --location=project
+fi
+
+# Install @kelceyp/swic
+log_step "Installing @kelceyp/swic from npm"
+npm install @kelceyp/swic --save-dev --loglevel=error
+
+if [ $? -eq 0 ]; then
+    log_success "Installation successful"
+else
+    log_failure "Installation failed"
+    exit 1
+fi
+
+# Test 1: Create template with valid front matter
+log_step "Test 1: Create template with valid front matter"
+
+TEMPLATE_CONTENT='---
+type: prompt
+params:
+  storyId:
+    type: number
+    required: true
+    description: "Story identifier"
+  continue:
+    type: boolean
+    required: false
+    default: false
+    description: "Whether to continue from previous session"
+synopsis: "Test template for story initialization"
+---
+# Story {{storyId}}
+
+{{#if continue}}
+Continuing from previous session...
+{{else}}
+Starting fresh story...
+{{/if}}'
+
+TEMPLATE_ID=$(echo "$TEMPLATE_CONTENT" | npx swic template create prompts/story-init.md --scope project -c -)
+
+if [ $? -eq 0 ]; then
+    log_success "Template created: $TEMPLATE_ID"
+    verify_contains "$TEMPLATE_ID" "tpl"
+else
+    log_failure "Failed to create template"
+fi
+
+# Verify file exists
+verify_file ".swic/templates/prompts/story-init.md"
+
+# Test 2: Read template
+log_step "Test 2: Read template"
+
+TEMPLATE_READ=$(npx swic template read "$TEMPLATE_ID")
+
+if [ $? -eq 0 ]; then
+    log_success "Template read successful"
+    verify_contains "$TEMPLATE_READ" "Story {{storyId}}"
+    verify_contains "$TEMPLATE_READ" "type: prompt"
+else
+    log_failure "Failed to read template"
+fi
+
+# Test 3: Read with metadata
+log_step "Test 3: Read template with metadata"
+
+TEMPLATE_META=$(npx swic template read "$TEMPLATE_ID" --metadata)
+
+if [ $? -eq 0 ]; then
+    log_success "Template read with metadata successful"
+    verify_contains "$TEMPLATE_META" "ID: $TEMPLATE_ID"
+    verify_contains "$TEMPLATE_META" "Path: prompts/story-init.md"
+    verify_contains "$TEMPLATE_META" "Valid: true"
+else
+    log_failure "Failed to read template with metadata"
+fi
+
+# Test 4: List templates
+log_step "Test 4: List templates"
+
+TEMPLATE_LIST=$(npx swic template list --scope project)
+
+if [ $? -eq 0 ]; then
+    log_success "Template list successful"
+    verify_contains "$TEMPLATE_LIST" "$TEMPLATE_ID"
+    verify_contains "$TEMPLATE_LIST" "prompts/story-init.md"
+else
+    log_failure "Failed to list templates"
+fi
+
+# Test 5: Get parameters
+log_step "Test 5: Get template parameters"
+
+PARAMS_OUTPUT=$(npx swic template get-parameters "$TEMPLATE_ID")
+
+if [ $? -eq 0 ]; then
+    log_success "Get parameters successful"
+    verify_contains "$PARAMS_OUTPUT" "storyId"
+    verify_contains "$PARAMS_OUTPUT" "\"type\": \"number\""
+    verify_contains "$PARAMS_OUTPUT" "\"required\": true"
+    verify_contains "$PARAMS_OUTPUT" "continue"
+    verify_contains "$PARAMS_OUTPUT" "\"type\": \"boolean\""
+    verify_contains "$PARAMS_OUTPUT" "\"default\": false"
+else
+    log_failure "Failed to get parameters"
+fi
+
+# Test 6: Render template with parameters
+log_step "Test 6: Render template with required parameters"
+
+RENDERED=$(npx swic template render "$TEMPLATE_ID" --param storyId=123 --param continue=false)
+
+if [ $? -eq 0 ]; then
+    log_success "Template render successful"
+    verify_contains "$RENDERED" "Story 123"
+    verify_contains "$RENDERED" "Starting fresh story"
+else
+    log_failure "Failed to render template"
+fi
+
+# Test 7: Render with continue=true
+log_step "Test 7: Render template with continue=true"
+
+RENDERED_CONTINUE=$(npx swic template render "$TEMPLATE_ID" --param storyId=456 --param continue=true)
+
+if [ $? -eq 0 ]; then
+    log_success "Template render with continue=true successful"
+    verify_contains "$RENDERED_CONTINUE" "Story 456"
+    verify_contains "$RENDERED_CONTINUE" "Continuing from previous session"
+else
+    log_failure "Failed to render template with continue=true"
+fi
+
+# Test 8: Render with missing required parameter (should fail)
+log_step "Test 8: Render without required parameter (should fail)"
+
+if npx swic template render "$TEMPLATE_ID" --param continue=false 2>&1 | grep -q "Missing required parameter"; then
+    log_success "Correctly rejected missing required parameter"
+else
+    log_failure "Should have rejected missing required parameter"
+fi
+
+# Test 9: Create invalid template (missing type field)
+log_step "Test 9: Create invalid template (should fail)"
+
+INVALID_TEMPLATE='---
+params:
+  test:
+    type: string
+    required: false
+---
+Body content'
+
+if echo "$INVALID_TEMPLATE" | npx swic template create invalid/template.md -c - 2>&1 | grep -q "TEMPLATE_INVALID"; then
+    log_success "Correctly rejected invalid template (missing type)"
+else
+    log_failure "Should have rejected invalid template"
+fi
+
+# Test 10: Edit template
+log_step "Test 10: Edit template"
+
+npx swic template edit "$TEMPLATE_ID" --old "Story {{storyId}}" --new "Epic {{storyId}}"
+
+if [ $? -eq 0 ]; then
+    log_success "Template edit successful"
+
+    # Verify edit
+    EDITED_READ=$(npx swic template read "$TEMPLATE_ID")
+    verify_contains "$EDITED_READ" "Epic {{storyId}}"
+else
+    log_failure "Failed to edit template"
+fi
+
+# Test 11: Move template
+log_step "Test 11: Move template to new path"
+
+NEW_TEMPLATE_ID=$(npx swic template move "$TEMPLATE_ID" workflows/story-init.md --confirm)
+
+if [ $? -eq 0 ]; then
+    log_success "Template move successful: $NEW_TEMPLATE_ID"
+    verify_contains "$NEW_TEMPLATE_ID" "tpl"
+
+    # Verify old file gone, new file exists
+    if [ ! -f ".swic/templates/prompts/story-init.md" ]; then
+        log_success "Old file removed"
+    else
+        log_failure "Old file still exists"
+    fi
+
+    verify_file ".swic/templates/workflows/story-init.md"
+else
+    log_failure "Failed to move template"
+fi
+
+# Update TEMPLATE_ID for subsequent tests
+TEMPLATE_ID="$NEW_TEMPLATE_ID"
+
+# Test 12: Bulk operations - create multiple templates
+log_step "Test 12: Create multiple templates for bulk test"
+
+SIMPLE_TEMPLATE='---
+type: doc
+params:
+  name:
+    type: string
+    required: true
+---
+Hello {{name}}'
+
+TEMPLATE_ID_2=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template2.md -c -)
+TEMPLATE_ID_3=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template3.md -c -)
+
+if [ $? -eq 0 ]; then
+    log_success "Created additional templates: $TEMPLATE_ID_2, $TEMPLATE_ID_3"
+else
+    log_failure "Failed to create additional templates"
+fi
+
+# Test 13: Bulk read
+log_step "Test 13: Bulk read templates"
+
+BULK_READ=$(npx swic template read "$TEMPLATE_ID_2,$TEMPLATE_ID_3")
+
+if [ $? -eq 0 ]; then
+    log_success "Bulk read successful"
+    verify_contains "$BULK_READ" "Hello {{name}}"
+else
+    log_failure "Failed bulk read"
+fi
+
+# Test 14: Bulk delete
+log_step "Test 14: Bulk delete templates"
+
+npx swic template delete "$TEMPLATE_ID_2,$TEMPLATE_ID_3" --confirm
+
+if [ $? -eq 0 ]; then
+    log_success "Bulk delete successful"
+
+    # Verify files gone
+    if [ ! -f ".swic/templates/test/template2.md" ] && [ ! -f ".swic/templates/test/template3.md" ]; then
+        log_success "Deleted files removed"
+    else
+        log_failure "Deleted files still exist"
+    fi
+else
+    log_failure "Failed bulk delete"
+fi
+
+# Test 15: Cross-scope move
+log_step "Test 15: Move template from project to shared scope"
+
+SHARED_TEMPLATE_ID=$(npx swic template move "$TEMPLATE_ID" shared-workflows/story.md --to-scope shared --confirm)
+
+if [ $? -eq 0 ]; then
+    log_success "Cross-scope move successful: $SHARED_TEMPLATE_ID"
+    verify_contains "$SHARED_TEMPLATE_ID" "stpl"
+
+    # Verify in shared location
+    verify_file "$HOME/.swic/templates/shared-workflows/story.md"
+else
+    log_failure "Failed cross-scope move"
+fi
+
+# Test 16: Override detection
+log_step "Test 16: Override detection in list"
+
+# Create template with same path in both scopes
+OVERRIDE_TEMPLATE='---
+type: prompt
+params: {}
+---
+Project version'
+
+PROJECT_OVERRIDE=$(echo "$OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope project -c -)
+
+SHARED_OVERRIDE_TEMPLATE='---
+type: prompt
+params: {}
+---
+Shared version'
+
+SHARED_OVERRIDE=$(echo "$SHARED_OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope shared -c -)
+
+# List both scopes (should show override status)
+LIST_BOTH=$(npx swic template list)
+
+if [ $? -eq 0 ]; then
+    log_success "List with both scopes successful"
+    verify_contains "$LIST_BOTH" "overrides"
+    verify_contains "$LIST_BOTH" "overridden"
+else
+    log_failure "Failed to list with override detection"
+fi
+
+# Test 17: Type coercion in rendering
+log_step "Test 17: Type coercion - number and boolean"
+
+TYPE_TEST_TEMPLATE='---
+type: prompt
+params:
+  count:
+    type: number
+    required: true
+  enabled:
+    type: boolean
+    required: true
+---
+Count: {{count}}
+Enabled: {{enabled}}'
+
+TYPE_TEST_ID=$(echo "$TYPE_TEST_TEMPLATE" | npx swic template create test/types.md -c -)
+
+# Render with string values that should be coerced
+TYPE_RENDERED=$(npx swic template render "$TYPE_TEST_ID" --param count=42 --param enabled=true)
+
+if [ $? -eq 0 ]; then
+    log_success "Type coercion successful"
+    verify_contains "$TYPE_RENDERED" "Count: 42"
+    verify_contains "$TYPE_RENDERED" "Enabled: true"
+else
+    log_failure "Failed type coercion"
+fi
+
+# Test 18: Invalid type coercion (should fail)
+log_step "Test 18: Invalid type coercion (should fail)"
+
+if npx swic template render "$TYPE_TEST_ID" --param count=abc --param enabled=true 2>&1 | grep -q "INVALID_PARAM_TYPE"; then
+    log_success "Correctly rejected invalid number"
+else
+    log_failure "Should have rejected invalid number"
+fi
+
+# Summary
+echo ""
+echo "========================================="
+if [ $FAILED -eq 0 ]; then
+    echo "✅ All template tests passed!"
+    echo "========================================="
+    exit 0
+else
+    echo "❌ Some template tests failed"
+    echo "========================================="
+    exit 1
+fi
