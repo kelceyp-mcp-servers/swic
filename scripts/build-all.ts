@@ -97,15 +97,26 @@ async function buildAll() {
 
     // Build server
     console.log('Building server...');
+    // const serverCode = await runCommand('bun', [
+    //     'build',
+    //     'src/server/Server.ts',
+    //     '--banner:js=#!/usr/bin/env node',
+    //     '--outdir', 'dist/server',
+    //     '--target', 'bun',
+    //     '--minify',
+    //     '--no-sourcemap'
+    // ]);
+
     const serverCode = await runCommand('bun', [
         'build',
         'src/server/Server.ts',
         '--banner:js=#!/usr/bin/env node',
         '--outdir', 'dist/server',
-        '--target', 'bun',
+        '--target', 'node',
         '--minify',
         '--no-sourcemap'
     ]);
+
 
     if (serverCode !== 0) {
         console.log('❌ Server build failed');

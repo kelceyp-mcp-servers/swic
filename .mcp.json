@@ -15,11 +15,16 @@
       ]
     },
     "swic-npm": {
+      "command": "swic-mcp",
+      "args": []
+    },
+    "swic-npm2": {
+      "command": "bunx",
+      "args": ["-y", "@kelceyp/swic@latest", "swic-mcp"]
+    },
+    "swic-npm3": {
       "command": "npx",
-      "args": [
-        "-y",
-        "swic-mcp"
-      ]
+      "args": ["-y", "@kelceyp/swic@latest", "swic-mcp"]
     },
     "filesystem": {
       "command": "npx",
