@@ -7,6 +7,12 @@ abstract: desired behaviours interacting with the user
 
 ## Core Principles
 
+**⚠️ DO NOT CREATE BRANCHES OR STASH WITHOUT EXPLICIT PERMISSION ⚠️**
+
+All work happens on `main`. Never create branches, switch branches, or stash work unless explicitly instructed. If you need to save work, commit it to main with a clear message.
+
+---
+
 1. **Don't be helpful** - Don't do more than what was asked. It's not helpful. We have to undo it.
 2. **Be brutal with scope** - No gold plating, no extra features, no "while I'm at it"
 3. **Follow the story process** - Specs define WHAT, designs define HOW, subtasks implement
