@@ -217,11 +217,18 @@ type docErrorCode =
     | 'INVALID_SCOPE';
 
 /**
- * Index file structure mapping IDs to paths
+ * Index file structure with bidirectional mappings
  * @internal
  */
 interface IndexData {
-    [id: string]: string;
+    id: {
+        [id: string]: {
+            path: string;
+        };
+    };
+    pathToId: {
+        [path: string]: string;
+    };
 }
 
 /**
@@ -405,9 +412,9 @@ const create = (options: docServiceOptions): DocServiceApi => {
             // Check if exists in project scope
             try {
                 const projectIndex = await readIndex('project');
-                // Look for doc by path in project index
-                const projectEntry = Object.entries(projectIndex.index).find(([_, p]) => p === addr.path);
-                if (projectEntry) {
+                // Look for doc by path in project index using pathToId mapping
+                const projectId = projectIndex.pathToId[addr.path];
+                if (projectId) {
                     return { scope: 'project' };
                 }
             }
@@ -418,8 +425,8 @@ const create = (options: docServiceOptions): DocServiceApi => {
             // Check if exists in shared scope
             try {
                 const sharedIndex = await readIndex('shared');
-                const sharedEntry = Object.entries(sharedIndex.index).find(([_, p]) => p === addr.path);
-                if (sharedEntry) {
+                const sharedId = sharedIndex.pathToId[addr.path];
+                if (sharedId) {
                     return { scope: 'shared', fallback: true };
                 }
             }
@@ -448,6 +455,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
     /**
      * Read index file
      * Returns empty index if file doesn't exist
+     * Automatically migrates old format to new format
      * @internal
      */
     const readIndex = async (scope: Scope): Promise<IndexData> => {
@@ -456,13 +464,35 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
         try {
             const content = await fileService.readText(indexPath);
-            const index = JSON.parse(content) as IndexData;
-            return index;
+            const parsed = JSON.parse(content);
+
+            // Detect old format: has string values instead of nested structure
+            const isOldFormat = !parsed.id && !parsed.pathToId;
+
+            if (isOldFormat) {
+                // Migrate old format to new format
+                const migrated: IndexData = {
+                    id: {},
+                    pathToId: {}
+                };
+
+                for (const [id, path] of Object.entries(parsed)) {
+                    migrated.id[id] = { path: path as string };
+                    migrated.pathToId[path as string] = id;
+                }
+
+                // Write back immediately
+                await writeIndex(scope, migrated);
+
+                return migrated;
+            }
+
+            return parsed as IndexData;
         }
         catch (error: any) {
             // If index doesn't exist, return empty index
             if (error.code === 'NOT_FOUND') {
-                return {};
+                return { id: {}, pathToId: {} };
             }
             throw error;
         }
@@ -668,11 +698,11 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
             const index = await readIndex(scope);
 
-            if (!index[id]) {
+            if (!index.id[id]) {
                 fail('doc_NOT_FOUND', `No doc with ID '${id}' in scope '${scope}'`, { id, scope });
             }
 
-            docPath = index[id];
+            docPath = index.id[id].path;
         }
 
         // Resolve using folder service (no extension, no root prefix)
@@ -698,7 +728,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
         const pattern = new RegExp(`^${prefix}(\\d{3,})$`);
 
         let maxNum = 0;
-        for (const id of Object.keys(index)) {
+        for (const id of Object.keys(index.id)) {
             const match = id.match(pattern);
             if (match) {
                 const num = parseInt(match[1], 10);
@@ -754,7 +784,8 @@ const create = (options: docServiceOptions): DocServiceApi => {
         await fileService.writeText(path, content);
 
         const index = await readIndex(scope);
-        index[id] = path;
+        index.id[id] = { path };
+        index.pathToId[path] = id;
         await writeIndex(scope, index);
 
         return {
@@ -787,9 +818,9 @@ const create = (options: docServiceOptions): DocServiceApi => {
             const normalized = normalizePathAddress({ ...addr, scope });
             canonicalPath = normalized.path;
 
-            // Lookup ID from index
+            // Lookup ID from index using pathToId mapping
             const index = await readIndex(scope);
-            const foundId = Object.keys(index).find(id => index[id] === canonicalPath);
+            const foundId = index.pathToId[canonicalPath];
             if (!foundId) {
                 return fail('doc_NOT_FOUND', `doc exists but not in index: '${canonicalPath}'`, { path: canonicalPath, scope });
             }
@@ -800,7 +831,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
             // Lookup path from index
             const index = await readIndex(scope);
-            const foundPath = index[canonicalId];
+            const foundPath = index.id[canonicalId]?.path;
             if (!foundPath) {
                 return fail('doc_NOT_FOUND', `No doc with ID '${canonicalId}'`, { id: canonicalId, scope });
             }
@@ -881,7 +912,7 @@ const create = (options: docServiceOptions): DocServiceApi => {
                 const pathAddr = addr as Omit<AddressPath, 'version'>;
                 const normalized = normalizePathAddress({ ...pathAddr, scope } as AddressPath & { scope: Scope });
                 const index = await readIndex(scope);
-                const foundId = Object.keys(index).find(id => index[id] === normalized.path);
+                const foundId = index.pathToId[normalized.path];
                 if (!foundId) {
                     return fail('doc_NOT_FOUND', `doc not in index: '${normalized.path}'`, { path: normalized.path, scope });
                 }
@@ -910,8 +941,10 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
         // Always update index to remove stale entries
         const index = await readIndex(scope);
-        if (index[docId]) {
-            delete index[docId];
+        if (index.id[docId]) {
+            const path = index.id[docId].path;
+            delete index.id[docId];
+            delete index.pathToId[path];
             await writeIndex(scope, index);
         }
 
@@ -989,7 +1022,8 @@ const create = (options: docServiceOptions): DocServiceApi => {
 
         const items: docListItem[] = [];
 
-        for (const [id, path] of Object.entries(index)) {
+        for (const [id, metadata] of Object.entries(index.id)) {
+            const path = metadata.path;
             if (pathPrefix && !path.startsWith(pathPrefix)) {
                 continue;
             }
