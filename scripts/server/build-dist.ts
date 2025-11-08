@@ -69,12 +69,25 @@ console.log('Building server...');
 //     cwd: projectRoot,
 //     stdio: 'inherit'
 // });
+// const proc = spawn('bun', [
+//     'build',
+//     'src/server/Server.ts',
+//     '--banner:js=#!/usr/bin/env node',
+//     '--outdir', 'dist/server',
+//     '--target', 'node',
+//     '--minify',
+//     '--no-sourcemap'
+// ], {
+//     cwd: projectRoot,
+//     stdio: 'inherit'
+// });
+
 const proc = spawn('bun', [
     'build',
     'src/server/Server.ts',
-    '--banner:js=#!/usr/bin/env node',
+    '--banner:js=#!/usr/bin/env bun',
     '--outdir', 'dist/server',
-    '--target', 'node',
+    '--target', 'bun',
     '--minify',
     '--no-sourcemap'
 ], {

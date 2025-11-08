@@ -1,11 +1,11 @@
 {
   "name": "@kelceyp/swic",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Story Workflow Inject Context - MCP server for managing stories, subtasks, and pipelines",
   "type": "module",
   "main": "dist/server/Server.js",
   "bin": {
-    "swic-mcp": "./dist/server/Server.js",
+    "swic-mcp": "./bin/swic-mcp.js",
     "swic": "./dist/cli/cli.js"
   },
   "files": [
@@ -34,7 +34,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@kelceyp/swic": "latest",
+    "@kelceyp/swic": "^0.2.9",
     "@types/bun": "latest",
     "@types/debug": "^4.1.12",
     "@types/node": "^20.0.0",
