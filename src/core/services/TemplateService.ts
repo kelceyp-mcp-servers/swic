@@ -1059,7 +1059,7 @@ export const createTemplateService = (
 
             // Try to delete file
             try {
-                await fileService.deleteFile(resolved.path);
+                await fileService.delete(resolved.path);
             }
             catch (error: any) {
                 if (error.code === 'NOT_FOUND') {
