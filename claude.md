@@ -11,6 +11,10 @@ abstract: desired behaviours interacting with the user
 
 All work happens on `main`. Never create branches, switch branches, or stash work unless explicitly instructed. If you need to save work, commit it to main with a clear message.
 
+**⚠️ NEVER USE --dangerously-skip-permissions OUTSIDE A CONTAINER ⚠️**
+
+Only use `--dangerously-skip-permissions` when running `claude -p` commands inside isolated test containers. Never use it on the host system.
+
 ---
 
 1. **Don't be helpful** - Don't do more than what was asked. It's not helpful. We have to undo it.
