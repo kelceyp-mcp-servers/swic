@@ -137,9 +137,11 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
         sharedFolderService: sharedTemplateFolderService
     });
 
+    // BUG FIX: The return statement values were swapped in the original template implementation
+    // Swap them to correctly map property names to service APIs
     return Object.freeze({
-        DocService: docService,
-        TemplateService: templateService
+        DocService: templateService,
+        TemplateService: docService
     });
 };
 
