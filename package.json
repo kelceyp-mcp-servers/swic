@@ -34,7 +34,7 @@
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@kelceyp/swic": "^0.2.9",
+    "@kelceyp/swic": "^0.2.10",
     "@types/bun": "latest",
     "@types/debug": "^4.1.12",
     "@types/node": "^20.0.0",

@@ -100,7 +100,7 @@ Continuing from previous session...
 Starting fresh story...
 {{/if}}'
 
-TEMPLATE_ID=$(echo "$TEMPLATE_CONTENT" | npx swic template create prompts/story-init.md --scope project -c -)
+TEMPLATE_ID=$(echo "$TEMPLATE_CONTENT" | npx swic template create prompts/story-init.md --scope project)
 
 if [ $? -eq 0 ]; then
     log_success "Template created: $TEMPLATE_ID"
@@ -215,7 +215,7 @@ params:
 ---
 Body content'
 
-if echo "$INVALID_TEMPLATE" | npx swic template create invalid/template.md -c - 2>&1 | grep -q "TEMPLATE_INVALID"; then
+if echo "$INVALID_TEMPLATE" | npx swic template create invalid/template.md 2>&1 | grep -q "TEMPLATE_INVALID"; then
     log_success "Correctly rejected invalid template (missing type)"
 else
     log_failure "Should have rejected invalid template"
@@ -272,8 +272,8 @@ params:
 ---
 Hello {{name}}'
 
-TEMPLATE_ID_2=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template2.md -c -)
-TEMPLATE_ID_3=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template3.md -c -)
+TEMPLATE_ID_2=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template2.md)
+TEMPLATE_ID_3=$(echo "$SIMPLE_TEMPLATE" | npx swic template create test/template3.md)
 
 if [ $? -eq 0 ]; then
     log_success "Created additional templates: $TEMPLATE_ID_2, $TEMPLATE_ID_3"
@@ -336,7 +336,7 @@ params: {}
 ---
 Project version'
 
-PROJECT_OVERRIDE=$(echo "$OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope project -c -)
+PROJECT_OVERRIDE=$(echo "$OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope project)
 
 SHARED_OVERRIDE_TEMPLATE='---
 type: prompt
@@ -344,7 +344,7 @@ params: {}
 ---
 Shared version'
 
-SHARED_OVERRIDE=$(echo "$SHARED_OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope shared -c -)
+SHARED_OVERRIDE=$(echo "$SHARED_OVERRIDE_TEMPLATE" | npx swic template create common/template.md --scope shared)
 
 # List both scopes (should show override status)
 LIST_BOTH=$(npx swic template list)
@@ -373,7 +373,7 @@ params:
 Count: {{count}}
 Enabled: {{enabled}}'
 
-TYPE_TEST_ID=$(echo "$TYPE_TEST_TEMPLATE" | npx swic template create test/types.md -c -)
+TYPE_TEST_ID=$(echo "$TYPE_TEST_TEMPLATE" | npx swic template create test/types.md)
 
 # Render with string values that should be coerced
 TYPE_RENDERED=$(npx swic template render "$TYPE_TEST_ID" --param "count=42,enabled=true")
