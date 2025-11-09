@@ -524,14 +524,17 @@ describe('FileService - Folder Cleanup', () => {
 
             // Folder appears empty
             mockReaddir.mockResolvedValueOnce([]);
-            // But rmdir fails with permission error
-            const accessError = new Error('EACCES: permission denied');
-            (accessError as any).code = 'EACCES';
-            mockRmdir.mockRejectedValueOnce(accessError);
+            // But rmdir fails with permission error - using a function to create the error
+            mockRmdir.mockImplementationOnce(() => {
+                const err = new Error('permission denied');
+                (err as any).code = 'EACCES';
+                return Promise.reject(err);
+            });
 
             const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
 
             // File deletion should still succeed
+            expect(result).toBeDefined();
             expect(result.deleted).toBe(true);
             expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
             expect(mockRmdir).toHaveBeenCalledWith('/test/boundary/project/folder');
@@ -550,9 +553,11 @@ describe('FileService - Folder Cleanup', () => {
             (fs.rmdir as Mock).mockImplementation(mockRmdir);
 
             // Can't read parent folder
-            const readError = new Error('EACCES: permission denied');
-            (readError as any).code = 'EACCES';
-            mockReaddir.mockRejectedValueOnce(readError);
+            mockReaddir.mockImplementationOnce(() => {
+                const err = new Error('permission denied');
+                (err as any).code = 'EACCES';
+                return Promise.reject(err);
+            });
 
             const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
 
@@ -602,9 +607,11 @@ describe('FileService - Folder Cleanup', () => {
 
             // Level 2: next level up - empty but removal fails
             mockReaddir.mockResolvedValueOnce([]);
-            const enotemptyError = new Error('ENOTEMPTY');
-            (enotemptyError as any).code = 'ENOTEMPTY';
-            mockRmdir.mockRejectedValueOnce(enotemptyError);
+            mockRmdir.mockImplementationOnce(() => {
+                const err = new Error('Directory not empty');
+                (err as any).code = 'ENOTEMPTY';
+                return Promise.reject(err);
+            });
 
             const result = await fileService.delete('project/a/b/c/doc.md', '/test/boundary/project');
 
