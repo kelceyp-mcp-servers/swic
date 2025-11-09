@@ -405,7 +405,217 @@ describe('FileService - Folder Cleanup', () => {
     });
 
     describe('cleanupEmptyFolders', () => {
-        // Tests will be added here for cleanupEmptyFolders method
+        it('should remove single empty parent folder after file deletion', async () => {
+            // Setup: File in a single folder
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock(() => Promise.resolve([])); // Empty folder
+            const mockRmdir = mock(() => Promise.resolve());
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+            expect(mockUnlink).toHaveBeenCalledWith('/test/boundary/project/folder/doc.md');
+            expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).toHaveBeenCalledWith('/test/boundary/project/folder');
+        });
+
+        it('should remove multiple empty parent folders recursively', async () => {
+            // Setup: File in nested folders
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock();
+            const mockRmdir = mock();
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            // Cleanup sequence:
+            // 1. Check deep/nested - empty, remove it
+            mockReaddir.mockResolvedValueOnce([]);
+            mockRmdir.mockResolvedValueOnce(undefined);
+
+            // 2. Check deep - now empty, remove it
+            mockReaddir.mockResolvedValueOnce([]);
+            mockRmdir.mockResolvedValueOnce(undefined);
+
+            // 3. Check project/folder - still has content
+            mockReaddir.mockResolvedValueOnce([
+                { name: 'other.md', isDirectory: () => false }
+            ]);
+
+            const result = await fileService.delete('project/folder/deep/nested/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+            expect(mockUnlink).toHaveBeenCalledWith('/test/boundary/project/folder/deep/nested/doc.md');
+
+            // Verify cleanup sequence
+            expect(mockReaddir).toHaveBeenNthCalledWith(1, '/test/boundary/project/folder/deep/nested', { withFileTypes: true });
+            expect(mockRmdir).toHaveBeenNthCalledWith(1, '/test/boundary/project/folder/deep/nested');
+
+            expect(mockReaddir).toHaveBeenNthCalledWith(2, '/test/boundary/project/folder/deep', { withFileTypes: true });
+            expect(mockRmdir).toHaveBeenNthCalledWith(2, '/test/boundary/project/folder/deep');
+
+            expect(mockReaddir).toHaveBeenNthCalledWith(3, '/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).not.toHaveBeenCalledWith('/test/boundary/project/folder');
+        });
+
+        it('should stop cleanup at first non-empty folder', async () => {
+            // Setup: File deletion with non-empty parent
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock(() => Promise.resolve([
+                { name: 'other.md', isDirectory: () => false },
+                { name: '.DS_Store', isDirectory: () => false }
+            ]));
+            const mockRmdir = mock(() => Promise.resolve());
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+            expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).not.toHaveBeenCalled();
+        });
+
+        it('should stop cleanup at scope root boundary', async () => {
+            // Setup: File directly in scope root
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock(() => Promise.resolve([]));
+            const mockRmdir = mock(() => Promise.resolve());
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            const result = await fileService.delete('project/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+            expect(mockUnlink).toHaveBeenCalledWith('/test/boundary/project/doc.md');
+            // Should not try to clean up the project folder itself
+            expect(mockReaddir).not.toHaveBeenCalled();
+            expect(mockRmdir).not.toHaveBeenCalled();
+        });
+
+        it('should handle errors during folder cleanup gracefully', async () => {
+            // Setup: File deletion succeeds but cleanup fails
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock();
+            const mockRmdir = mock();
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            // Folder appears empty
+            mockReaddir.mockResolvedValueOnce([]);
+            // But rmdir fails with permission error
+            const accessError = new Error('EACCES: permission denied');
+            (accessError as any).code = 'EACCES';
+            mockRmdir.mockRejectedValueOnce(accessError);
+
+            const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
+
+            // File deletion should still succeed
+            expect(result.deleted).toBe(true);
+            expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).toHaveBeenCalledWith('/test/boundary/project/folder');
+        });
+
+        it('should handle readdir errors during cleanup gracefully', async () => {
+            // Setup: File deletion succeeds but can't read parent folder
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock();
+            const mockRmdir = mock(() => Promise.resolve());
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            // Can't read parent folder
+            const readError = new Error('EACCES: permission denied');
+            (readError as any).code = 'EACCES';
+            mockReaddir.mockRejectedValueOnce(readError);
+
+            const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
+
+            // File deletion should still succeed
+            expect(result.deleted).toBe(true);
+            expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).not.toHaveBeenCalled();
+        });
+
+        it('should cleanup folders with only hidden files', async () => {
+            // Setup: Folder with only hidden files after deletion
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock(() => Promise.resolve([
+                { name: '.DS_Store', isDirectory: () => false },
+                { name: '.gitkeep', isDirectory: () => false }
+            ]));
+            const mockRmdir = mock(() => Promise.resolve());
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            const result = await fileService.delete('project/folder/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+            expect(mockReaddir).toHaveBeenCalledWith('/test/boundary/project/folder', { withFileTypes: true });
+            expect(mockRmdir).toHaveBeenCalledWith('/test/boundary/project/folder');
+        });
+
+        it('should handle complex nested cleanup with mixed success', async () => {
+            // Setup: Deep nesting with partial cleanup success
+            const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
+            const mockUnlink = mock(() => Promise.resolve());
+            const mockReaddir = mock();
+            const mockRmdir = mock();
+
+            (fs.stat as Mock).mockImplementation(mockStat);
+            (fs.unlink as Mock).mockImplementation(mockUnlink);
+            (fs.readdir as Mock).mockImplementation(mockReaddir);
+            (fs.rmdir as Mock).mockImplementation(mockRmdir);
+
+            // Level 1: deepest folder - empty and removes successfully
+            mockReaddir.mockResolvedValueOnce([]);
+            mockRmdir.mockResolvedValueOnce(undefined);
+
+            // Level 2: next level up - empty but removal fails
+            mockReaddir.mockResolvedValueOnce([]);
+            const enotemptyError = new Error('ENOTEMPTY');
+            (enotemptyError as any).code = 'ENOTEMPTY';
+            mockRmdir.mockRejectedValueOnce(enotemptyError);
+
+            const result = await fileService.delete('project/a/b/c/doc.md', '/test/boundary/project');
+
+            expect(result.deleted).toBe(true);
+
+            // Should have tried to clean both levels
+            expect(mockReaddir).toHaveBeenCalledTimes(2);
+            expect(mockRmdir).toHaveBeenCalledTimes(2);
+            expect(mockRmdir).toHaveBeenNthCalledWith(1, '/test/boundary/project/a/b/c');
+            expect(mockRmdir).toHaveBeenNthCalledWith(2, '/test/boundary/project/a/b');
+        });
     });
 
     describe('deleteFile with cleanup', () => {

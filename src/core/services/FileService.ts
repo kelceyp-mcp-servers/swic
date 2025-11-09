@@ -390,18 +390,17 @@ const create = (options: FileServiceOptions): FileServiceApi => {
                 }
                 catch {
                     // Never propagate cleanup errors
-                    // TODO: Add debug logging
                 }
             }
 
             return { deleted: true };
         }
-        catch (error: any) {
+        catch (error: unknown) {
             // File doesn't exist - idempotent success
-            if (error.code === 'ENOENT') {
+            if (error instanceof Error && (error as any).code === 'ENOENT') {
                 return { deleted: false };
             }
-            throw pathSecurity.mapOsError(error, {
+            throw pathSecurity.mapOsError(error as Error, {
                 path: relativePath,
                 resolved: absPath,
                 operation: 'delete'
@@ -437,7 +436,6 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         }
         catch {
             // Can't read = assume not empty (fail-safe)
-            // TODO: Add debug logging
             return false;
         }
     };
@@ -451,28 +449,25 @@ const create = (options: FileServiceOptions): FileServiceApi => {
             await fs.rmdir(folderPath);
             return true;
         }
-        catch (error: any) {
+        catch (error: unknown) {
             // Special handling for specific error codes
-            switch (error.code) {
+            const errorCode = error instanceof Error ? (error as any).code : undefined;
+            switch (errorCode) {
             case 'ENOENT':
                 // Folder already removed (concurrent operation)
-                // TODO: Add debug logging
                 return true;
 
             case 'ENOTEMPTY':
                 // Folder no longer empty (race condition)
-                // TODO: Add debug logging
                 return false;
 
             case 'EACCES':
             case 'EPERM':
                 // Permission denied
-                // TODO: Add debug logging
                 return false;
 
             default:
                 // Unknown error
-                // TODO: Add debug logging
                 return false;
             }
         }
@@ -511,7 +506,6 @@ const create = (options: FileServiceOptions): FileServiceApi => {
 
             if (!isEmpty) {
                 // Stop at first non-empty folder
-                // TODO: Add debug logging
                 break;
             }
 
@@ -520,11 +514,8 @@ const create = (options: FileServiceOptions): FileServiceApi => {
 
             if (!removed) {
                 // Stop if removal failed
-                // TODO: Add debug logging
                 break;
             }
-
-            // TODO: Add debug logging for successful removal
 
             // Move up to parent directory
             currentPath = path.dirname(currentPath);
