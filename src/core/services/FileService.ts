@@ -1,6 +1,8 @@
-import { readFile, writeFile, unlink, stat as fsStat, rename, access, mkdir } from 'fs/promises';
+import { readFile, writeFile, unlink, stat as fsStat, rename, access, mkdir, readdir, rmdir } from 'fs/promises';
 import { constants } from 'fs';
-import { resolve, dirname, isAbsolute } from 'path';
+import { resolve, dirname, isAbsolute, normalize } from 'path';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import pathSecurity from '../utils/pathSecurity.js';
 
 import type { Stats } from 'fs';
@@ -103,12 +105,14 @@ interface FileServiceApi {
      * await service.delete('file.txt');  // { deleted: false } - success!
      *
      * @param relativePath - Path relative to the boundary directory
+     * @param scopeRoot - Optional absolute path to scope root for folder cleanup
      * @returns Object with deleted boolean (true if deleted, false if already missing)
      * @throws {FsError} BOUNDARY_VIOLATION if path escapes boundary
      * @throws {FsError} FS_ERROR for permission or other filesystem errors
      */
     delete(
-        relativePath: string
+        relativePath: string,
+        scopeRoot?: string
     ): Promise<{ deleted: boolean }>;
 
     /**
@@ -370,13 +374,26 @@ const create = (options: FileServiceOptions): FileServiceApi => {
      * @internal
      */
     const deleteFile = async (
-        relativePath: string
+        relativePath: string,
+        scopeRoot?: string
     ): Promise<{ deleted: boolean }> => {
         const absPath = await resolvePath(relativePath);
 
         // Delete the file
         try {
             await unlink(absPath);
+
+            // Optionally cleanup empty folders
+            if (scopeRoot) {
+                try {
+                    await cleanupEmptyFolders(absPath, scopeRoot);
+                }
+                catch (error) {
+                    // Never propagate cleanup errors
+                    // TODO: Add debug logging
+                }
+            }
+
             return { deleted: true };
         }
         catch (error: any) {
@@ -389,6 +406,128 @@ const create = (options: FileServiceOptions): FileServiceApi => {
                 resolved: absPath,
                 operation: 'delete'
             });
+        }
+    };
+
+    /**
+     * Check if a folder is empty (contains no documents)
+     * @internal
+     */
+    const isFolderEmpty = async (folderPath: string): Promise<boolean> => {
+        try {
+            const entries = await fs.readdir(folderPath, { withFileTypes: true });
+
+            for (const entry of entries) {
+                // If it's a directory, consider folder non-empty
+                // (subdirectory might contain documents)
+                if (entry.isDirectory()) {
+                    return false;
+                }
+
+                // If it's a .md file, folder is not empty
+                if (entry.isFile() && entry.name.endsWith('.md')) {
+                    return false;
+                }
+
+                // Non-.md files are ignored (e.g., .DS_Store, .gitkeep)
+            }
+
+            // No directories or .md files found
+            return true;
+        }
+        catch (error) {
+            // Can't read = assume not empty (fail-safe)
+            // TODO: Add debug logging
+            return false;
+        }
+    };
+
+    /**
+     * Attempt to remove a folder with graceful error handling
+     * @internal
+     */
+    const tryRemoveFolder = async (folderPath: string): Promise<boolean> => {
+        try {
+            await fs.rmdir(folderPath);
+            return true;
+        }
+        catch (error: any) {
+            // Special handling for specific error codes
+            switch (error.code) {
+                case 'ENOENT':
+                    // Folder already removed (concurrent operation)
+                    // TODO: Add debug logging
+                    return true;
+
+                case 'ENOTEMPTY':
+                    // Folder no longer empty (race condition)
+                    // TODO: Add debug logging
+                    return false;
+
+                case 'EACCES':
+                case 'EPERM':
+                    // Permission denied
+                    // TODO: Add debug logging
+                    return false;
+
+                default:
+                    // Unknown error
+                    // TODO: Add debug logging
+                    return false;
+            }
+        }
+    };
+
+    /**
+     * Check if we've reached the scope root boundary
+     * @internal
+     */
+    const isAtScopeRoot = (folderPath: string, scopeRoot: string): boolean => {
+        // Normalize both paths for accurate comparison
+        const normalizedFolder = path.normalize(folderPath);
+        const normalizedRoot = path.normalize(scopeRoot);
+
+        // Check if we're at or above the root
+        return normalizedFolder === normalizedRoot ||
+               !normalizedFolder.startsWith(normalizedRoot);
+    };
+
+    /**
+     * Recursively remove empty parent folders up to scope root
+     * @internal
+     */
+    const cleanupEmptyFolders = async (
+        filePath: string,
+        scopeRoot: string
+    ): Promise<void> => {
+        let currentPath = path.dirname(filePath);
+
+        // Normalize paths for comparison
+        const normalizedRoot = path.normalize(scopeRoot);
+
+        while (!isAtScopeRoot(currentPath, normalizedRoot)) {
+            // Check if folder is empty
+            const isEmpty = await isFolderEmpty(currentPath);
+
+            if (!isEmpty) {
+                // Stop at first non-empty folder
+                // TODO: Add debug logging
+                break;
+            }
+
+            // Try to remove the folder
+            const removed = await tryRemoveFolder(currentPath);
+
+            if (!removed) {
+                // Stop if removal failed
+                // TODO: Add debug logging
+                break;
+            }
+
+            // TODO: Add debug logging for successful removal
+
+            // Move up to parent directory
+            currentPath = path.dirname(currentPath);
         }
     };
 

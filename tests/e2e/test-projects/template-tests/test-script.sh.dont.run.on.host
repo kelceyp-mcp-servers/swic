@@ -78,7 +78,10 @@ fi
 # Test 1: Create template with valid front matter
 log_step "Test 1: Create template with valid front matter"
 
-TEMPLATE_CONTENT='---
+# Use heredoc instead of variable to avoid quoting issues
+set +e  # Temporarily disable exit on error to see output
+npx swic template create prompts/story-init.md --scope project > /tmp/output.txt 2>&1 <<'TEMPLATE_EOF'
+---
 type: prompt
 params:
   storyId:
@@ -98,11 +101,17 @@ synopsis: "Test template for story initialization"
 Continuing from previous session...
 {{else}}
 Starting fresh story...
-{{/if}}'
+{{/if}}
+TEMPLATE_EOF
 
-TEMPLATE_ID=$(echo "$TEMPLATE_CONTENT" | npx swic template create prompts/story-init.md --scope project)
+CREATE_EXIT=$?
+TEMPLATE_ID=$(cat /tmp/output.txt)
+set -e  # Re-enable exit on error
 
-if [ $? -eq 0 ]; then
+echo "Output was: $TEMPLATE_ID"
+echo "Exit code: $CREATE_EXIT"
+
+if [ $CREATE_EXIT -eq 0 ]; then
     log_success "Template created: $TEMPLATE_ID"
     verify_contains "$TEMPLATE_ID" "tpl"
 else
