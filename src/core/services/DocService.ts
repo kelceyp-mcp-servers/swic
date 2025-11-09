@@ -323,6 +323,10 @@ interface docServiceOptions {
         project: FolderServiceApi;
         shared: FolderServiceApi;
     };
+    scopeRootByScope?: {
+        project: string;
+        shared: string;
+    };
     indexFilename: string;
 }
 
@@ -352,7 +356,7 @@ const fail = (code: string, message: string, data?: unknown): never => {
  * @throws {FsError} VALIDATION_ERROR if options are invalid
  */
 const create = (options: docServiceOptions): DocServiceApi => {
-    const { fileServiceByScope, folderServiceByScope, indexFilename } = options;
+    const { fileServiceByScope, folderServiceByScope, scopeRootByScope, indexFilename } = options;
 
     /**
      * Get file service for a scope
@@ -925,9 +929,10 @@ const create = (options: docServiceOptions): DocServiceApi => {
         })();
 
         const fileService = getFileService(scope);
+        const scopeRoot = scopeRootByScope?.[scope];
         let deleted = false;
         try {
-            const result = await fileService.delete(relativePath);
+            const result = await fileService.delete(relativePath, scopeRoot);
             deleted = result.deleted;
         }
         catch (error: any) {

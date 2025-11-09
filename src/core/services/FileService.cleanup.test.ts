@@ -448,7 +448,7 @@ describe('FileService - Folder Cleanup', () => {
 
             // 3. Check project/folder - still has content
             mockReaddir.mockResolvedValueOnce([
-                { name: 'other.md', isDirectory: () => false }
+                { name: 'other.md', isFile: () => true, isDirectory: () => false }
             ]);
 
             const result = await fileService.delete('project/folder/deep/nested/doc.md', '/test/boundary/project');
@@ -472,8 +472,8 @@ describe('FileService - Folder Cleanup', () => {
             const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
             const mockUnlink = mock(() => Promise.resolve());
             const mockReaddir = mock(() => Promise.resolve([
-                { name: 'other.md', isDirectory: () => false },
-                { name: '.DS_Store', isDirectory: () => false }
+                { name: 'other.md', isFile: () => true, isDirectory: () => false },
+                { name: '.DS_Store', isFile: () => true, isDirectory: () => false }
             ]));
             const mockRmdir = mock(() => Promise.resolve());
 
@@ -567,8 +567,8 @@ describe('FileService - Folder Cleanup', () => {
             const mockStat = mock(() => Promise.resolve({ isDirectory: () => false }));
             const mockUnlink = mock(() => Promise.resolve());
             const mockReaddir = mock(() => Promise.resolve([
-                { name: '.DS_Store', isDirectory: () => false },
-                { name: '.gitkeep', isDirectory: () => false }
+                { name: '.DS_Store', isFile: () => true, isDirectory: () => false },
+                { name: '.gitkeep', isFile: () => true, isDirectory: () => false }
             ]));
             const mockRmdir = mock(() => Promise.resolve());
 

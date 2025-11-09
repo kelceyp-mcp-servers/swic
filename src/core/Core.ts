@@ -127,6 +127,10 @@ const createServices = (options: CoreOptions): Readonly<CoreServices> => {
             project: projectDocFolderService,
             shared: sharedDocFolderService
         },
+        scopeRootByScope: {
+            project: projectDocBoundary,
+            shared: sharedDocBoundary
+        },
         indexFilename: INDEX_FILENAME
     });
 
