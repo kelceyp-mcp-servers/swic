@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# E2E Test: Folder Cleanup After Document Deletion
+# Tests automatic removal of empty folders when documents are deleted
+
+set -e
+
+# Color output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_step() { echo -e "${YELLOW}▶${NC} $1"; }
+log_success() { echo -e "${GREEN}✓${NC} $1"; }
+log_failure() { echo -e "${RED}✗${NC} $1"; }
+
+echo "=================================================="
+echo "E2E Test: Folder Cleanup"
+echo "=================================================="
+echo ""
+
+# Test 1: Setup - Create deep folder structure with single document
+log_step "Test 1: Creating deep folder structure"
+
+npx swic doc create --scope project \
+    --content "Test document in deep folder" \
+    deep/nested/folder/structure/test.md
+
+DOC_ID=$(npx swic doc list --scope project | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+if [ -z "$DOC_ID" ]; then
+    log_failure "Failed to create document"
+    exit 1
+fi
+
+log_success "Created document: $DOC_ID"
+
+# Verify folder exists
+if [ ! -d ".swic/docs/deep/nested/folder/structure" ]; then
+    log_failure "Folder structure not created"
+    exit 1
+fi
+
+log_success "Folder structure created"
+
+# Test 2: Delete document and verify all empty folders removed
+log_step "Test 2: Deleting document and verifying folder cleanup"
+
+npx swic doc delete "$DOC_ID"
+
+# Check that all folders are removed
+if [ -d ".swic/docs/deep" ]; then
+    log_failure "Folder cleanup failed - 'deep' folder still exists"
+    exit 1
+fi
+
+log_success "All empty folders removed"
+
+# Test 3: Partial cleanup - some folders have other content
+log_step "Test 3: Partial cleanup test"
+
+# Create two documents in different subfolders
+npx swic doc create --scope project \
+    --content "Doc 1" \
+    shared/branch1/doc1.md
+
+npx swic doc create --scope project \
+    --content "Doc 2" \
+    shared/branch2/doc2.md
+
+DOC1=$(npx swic doc list --scope project | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+DOC2=$(npx swic doc list --scope project | grep -o '"id":"[^"]*"' | head -2 | tail -1 | cut -d'"' -f4)
+
+# Delete first document
+npx swic doc delete "$DOC1"
+
+# Verify branch1 removed but shared remains
+if [ -d ".swic/docs/shared/branch1" ]; then
+    log_failure "branch1 folder not removed"
+    exit 1
+fi
+
+if [ ! -d ".swic/docs/shared" ]; then
+    log_failure "shared folder incorrectly removed"
+    exit 1
+fi
+
+if [ ! -d ".swic/docs/shared/branch2" ]; then
+    log_failure "branch2 folder incorrectly removed"
+    exit 1
+fi
+
+log_success "Partial cleanup works correctly"
+
+# Test 4: Cleanup stops at scope root
+log_step "Test 4: Verify cleanup stops at scope root"
+
+npx swic doc delete "$DOC2"
+
+# All folders should be removed except .swic/docs itself
+if [ ! -d ".swic/docs" ]; then
+    log_failure "Scope root was incorrectly removed"
+    exit 1
+fi
+
+if [ -d ".swic/docs/shared" ]; then
+    log_failure "shared folder not removed"
+    exit 1
+fi
+
+log_success "Cleanup correctly stops at scope root"
+
+# Test 5: Shared scope cleanup
+log_step "Test 5: Testing shared scope cleanup"
+
+npx swic doc create --scope shared \
+    --content "Shared doc" \
+    templates/old/template.md
+
+SHARED_DOC=$(npx swic doc list --scope shared | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+npx swic doc delete --scope shared "$SHARED_DOC"
+
+# Verify cleanup in shared scope
+if [ -d "$HOME/.swic/docs/templates" ]; then
+    log_failure "Shared scope cleanup failed"
+    exit 1
+fi
+
+log_success "Shared scope cleanup works correctly"
+
+echo ""
+echo "=================================================="
+echo -e "${GREEN}All folder cleanup E2E tests passed!${NC}"
+echo "=================================================="
