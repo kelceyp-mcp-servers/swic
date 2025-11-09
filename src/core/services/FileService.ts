@@ -1,6 +1,6 @@
-import { readFile, writeFile, unlink, stat as fsStat, rename, access, mkdir, readdir, rmdir } from 'fs/promises';
+import { readFile, writeFile, unlink, stat as fsStat, rename, access, mkdir } from 'fs/promises';
 import { constants } from 'fs';
-import { resolve, dirname, isAbsolute, normalize } from 'path';
+import { resolve, dirname, isAbsolute } from 'path';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import pathSecurity from '../utils/pathSecurity.js';
@@ -388,7 +388,7 @@ const create = (options: FileServiceOptions): FileServiceApi => {
                 try {
                     await cleanupEmptyFolders(absPath, scopeRoot);
                 }
-                catch (error) {
+                catch {
                     // Never propagate cleanup errors
                     // TODO: Add debug logging
                 }
@@ -435,7 +435,7 @@ const create = (options: FileServiceOptions): FileServiceApi => {
             // No directories or .md files found
             return true;
         }
-        catch (error) {
+        catch {
             // Can't read = assume not empty (fail-safe)
             // TODO: Add debug logging
             return false;
@@ -454,26 +454,26 @@ const create = (options: FileServiceOptions): FileServiceApi => {
         catch (error: any) {
             // Special handling for specific error codes
             switch (error.code) {
-                case 'ENOENT':
-                    // Folder already removed (concurrent operation)
-                    // TODO: Add debug logging
-                    return true;
+            case 'ENOENT':
+                // Folder already removed (concurrent operation)
+                // TODO: Add debug logging
+                return true;
 
-                case 'ENOTEMPTY':
-                    // Folder no longer empty (race condition)
-                    // TODO: Add debug logging
-                    return false;
+            case 'ENOTEMPTY':
+                // Folder no longer empty (race condition)
+                // TODO: Add debug logging
+                return false;
 
-                case 'EACCES':
-                case 'EPERM':
-                    // Permission denied
-                    // TODO: Add debug logging
-                    return false;
+            case 'EACCES':
+            case 'EPERM':
+                // Permission denied
+                // TODO: Add debug logging
+                return false;
 
-                default:
-                    // Unknown error
-                    // TODO: Add debug logging
-                    return false;
+            default:
+                // Unknown error
+                // TODO: Add debug logging
+                return false;
             }
         }
     };
