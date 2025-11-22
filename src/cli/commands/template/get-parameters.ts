@@ -4,6 +4,37 @@ import type { CoreServices } from '../../../core/Core.js';
 const getParameters = (services: CoreServices) => {
     return createCommand('get-parameters')
         .summary('Get parameter definitions for a template')
+        .description(`Retrieves parameter definitions from a template's front matter.
+
+Returns a JSON object listing all parameters defined in the template, including:
+  • Parameter names
+  • Types (string, number, boolean)
+  • Whether they're required or optional
+  • Default values (if specified)
+  • Descriptions (if provided in template)
+
+Use this before rendering a template to discover what parameters it accepts.
+
+PARAMETERS:
+  identifier
+    Template identifier - can be template ID or path:
+      • Template ID: tpl001 (project), stpl001 (shared)
+      • Path: prompts/story-init.md, workflows/deploy.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (tpl=project, stpl=shared)
+
+EXAMPLES:
+  # Get parameters for a template by path
+  swic template get-parameters prompts/story-init.md
+
+  # Get parameters by template ID
+  swic template get-parameters tpl001
+
+  # Specify scope explicitly
+  swic template get-parameters init.md -s shared`)
         .param((p) => p
             .name('identifier')
             .type('string')

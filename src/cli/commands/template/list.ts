@@ -5,6 +5,53 @@ import chalk from 'chalk';
 const list = (services: CoreServices) => {
     return createCommand('list')
         .summary('List all templates')
+        .description(`Lists templates with optional filtering and override detection.
+
+When no scope is specified, lists templates from both scopes and detects overrides
+(project templates that shadow shared templates at the same path).
+
+OUTPUT COLUMNS:
+  - ID: Template identifier (tpl001=project, stpl001=shared)
+  - PATH: Template path within scope
+  - SCOPE: "project" or "shared" (only when listing both scopes)
+  - VALID: Whether template has valid front matter
+  - OVERRIDE: Shows override relationship (only when listing both scopes)
+  - SYNOPSIS: Brief description from front matter (with --full flag)
+
+PARAMETERS:
+  --scope, -s
+    Scope to list: "project" or "shared"
+    Omit to list both scopes with override detection
+    When specified, shows simplified 3-column output
+
+  --prefix, -p
+    Filter by path prefix
+    Examples: "prompts/", "workflows/story"
+    Useful for viewing templates in specific directories
+
+  --full, -f
+    Include synopsis column from template front matter
+    Shows brief description of each template
+
+COLOR CODING (both scopes mode):
+  • Cyan: Project templates
+  • Green: Shared templates
+
+EXAMPLES:
+  # List all templates from both scopes
+  swic template list
+
+  # List only project templates
+  swic template list --scope project
+
+  # List templates in prompts/ directory
+  swic template list --prefix prompts/
+
+  # List with synopsis descriptions
+  swic template list --full
+
+  # List shared templates starting with "common/"
+  swic template list -s shared -p common/`)
         .param((p) => p
             .name('scope')
             .type('string')

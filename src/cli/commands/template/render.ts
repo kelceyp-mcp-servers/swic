@@ -4,6 +4,41 @@ import type { CoreServices } from '../../../core/Core.js';
 const render = (services: CoreServices) => {
     return createCommand('render')
         .summary('Render a template with parameters')
+        .description(`Renders a template by substituting parameter values into the template content.
+
+PARAMETERS:
+  identifier
+    Template identifier - can be template ID or path:
+      • Template ID: tpl001 (project), stpl001 (shared)
+      • Path: prompts/story-init.md, workflows/deploy.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (tpl=project, stpl=shared)
+
+  --param, -p
+    Template parameters as key=value pairs
+    Can specify multiple parameters comma-separated or repeat the flag
+    Values are automatically type-coerced:
+      • Booleans: "true" or "false" → boolean
+      • Numbers: digits with optional decimal → number
+      • Strings: everything else → string
+
+    Use 'swic template get-parameters <identifier>' to discover available parameters
+
+EXAMPLES:
+  # Render with single parameter
+  swic template render prompts/init.md --param name=myproject
+
+  # Multiple parameters (comma-separated)
+  swic template render prompts/init.md --param name=myproject,verbose=true,count=5
+
+  # Multiple parameters (repeated flag)
+  swic template render tpl001 -p env=prod -p region=us-west
+
+  # Specify scope explicitly
+  swic template render story-init.md -s shared -p id=042,name=auth-feature`)
         .param((p) => p
             .name('identifier')
             .type('string')

@@ -4,6 +4,44 @@ import type { CoreServices } from '../../../core/Core.js';
 const read = (services: CoreServices) => {
     return createCommand('read')
         .summary('Read one or more templates')
+        .description(`Reads and displays the content of one or more templates.
+
+Supports bulk reading by providing comma-separated identifiers.
+Output includes the template content and optionally metadata headers.
+
+PARAMETERS:
+  identifier
+    Template identifier(s) - can be template ID or path
+      • Single: tpl001, prompts/init.md
+      • Multiple: tpl001,tpl002,prompts/init.md (comma-separated)
+
+    Template IDs: tpl001 (project), stpl001 (shared)
+    Paths: prompts/story-init.md, workflows/deploy.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (tpl=project, stpl=shared)
+
+  --metadata, -m
+    Include metadata header with ID, path, and validity status
+    Useful for debugging or verifying template location
+
+EXAMPLES:
+  # Read single template by path
+  swic template read prompts/init.md
+
+  # Read by template ID
+  swic template read tpl001
+
+  # Read multiple templates
+  swic template read tpl001,tpl002,prompts/deploy.md
+
+  # Read with metadata
+  swic template read prompts/init.md --metadata
+
+  # Read from specific scope
+  swic template read init.md -s shared`)
         .param((p) => p
             .name('identifier')
             .type('string')

@@ -17,6 +17,65 @@ import { join } from 'path';
 const create = (services: CoreServices) => {
     return createCommand('edit')
         .summary('Edit a doc (auto-resolves scope)')
+        .description(`Edits a doc using text replacement or interactive editor.
+
+Supports two modes:
+  1. Interactive mode: Opens doc in $EDITOR for full editing
+  2. Replace mode: Performs targeted text replacements (once, all, or regex)
+
+PARAMETERS:
+  identifier
+    Doc identifier - can be doc ID or path
+    Doc IDs: doc001 (project), sdoc001 (shared)
+    Paths: auth/jwt-setup.md, stories/042/spec.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (doc=project, sdoc=shared)
+
+  --interactive, -i
+    Open doc in $EDITOR for full editing
+    Defaults to vi if EDITOR not set
+    Cannot be combined with --old/--new/--mode
+
+  --old
+    Text to find and replace
+    Required when not using --interactive
+    For regex mode, can use /pattern/flags format
+
+  --new
+    Replacement text
+    Required when not using --interactive
+
+  --mode, -m
+    Replacement mode: "once", "all", or "regex"
+    Defaults to "all"
+      • once: Replace first occurrence only
+      • all: Replace all occurrences
+      • regex: Pattern-based replacement
+
+REPLACE MODES:
+  once  - Replaces only the first occurrence (safest)
+  all   - Replaces all occurrences throughout the doc
+  regex - Pattern-based replacement with regex support
+          Use /pattern/flags format or just the pattern
+
+EXAMPLES:
+  # Interactive editing
+  swic doc edit auth/jwt-setup.md --interactive
+
+  # Replace first occurrence
+  swic doc edit doc001 --old "TODO" --new "DONE" --mode once
+
+  # Replace all occurrences (default mode)
+  swic doc edit stories/042/spec.md --old "user" --new "account"
+
+  # Regex replacement
+  swic doc edit doc001 --old "/v\d+\.\d+/g" --new "v2.0" --mode regex
+
+  # Edit shared doc
+  swic doc edit coding-standards.md -s shared -i`)
         .param((p) => p
             .name('identifier')
             .type('string')

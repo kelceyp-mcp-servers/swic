@@ -22,6 +22,48 @@ const confirmPrompt = (message: string): Promise<boolean> => {
 const deleteCommand = (services: CoreServices) => {
     return createCommand('delete')
         .summary('Delete one or more templates')
+        .description(`Deletes one or more templates permanently.
+
+Supports bulk deletion with comma-separated identifiers. Prompts for confirmation
+unless --confirm flag is provided. Operation is idempotent - doesn't error if
+template is already deleted.
+
+PARAMETERS:
+  identifier
+    Template identifier(s) - can be template ID or path
+      • Single: tpl001, prompts/init.md
+      • Multiple: tpl001,tpl002,prompts/init.md (comma-separated)
+
+    Template IDs: tpl001 (project), stpl001 (shared)
+    Paths: prompts/story-init.md, workflows/deploy.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (tpl=project, stpl=shared)
+
+  --confirm, -y
+    Skip confirmation prompt
+    Useful for scripts and automation
+    Use with caution - deletion is permanent
+
+CONFIRMATION:
+  - Single deletion: Prompts with template identifier
+  - Bulk deletion: Shows list of templates, then prompts
+  - Skipped with --confirm flag
+
+EXAMPLES:
+  # Delete single template (will prompt)
+  swic template delete prompts/old.md
+
+  # Delete multiple templates (will prompt)
+  swic template delete tpl001,tpl002,prompts/deprecated.md
+
+  # Delete without confirmation
+  swic template delete prompts/temp.md --confirm
+
+  # Delete from specific scope
+  swic template delete old-workflow.md -s shared -y`)
         .param((p) => p
             .name('identifier')
             .type('string')

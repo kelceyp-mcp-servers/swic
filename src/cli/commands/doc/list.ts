@@ -19,6 +19,52 @@ const COLORS = {
 const create = (services: CoreServices) => {
     return createCommand('list')
         .summary('List docs (defaults to both scopes with override detection)')
+        .description(`Lists docs with optional filtering and override detection.
+
+When no scope is specified, lists docs from both scopes and detects overrides
+(project docs that shadow shared docs at the same path).
+
+OUTPUT COLUMNS:
+  - ID: Doc identifier (doc001=project, sdoc001=shared)
+  - NAME/PATH: Doc path within scope
+  - SCOPE: "project" or "shared" (only when listing both scopes)
+  - OVERRIDE: Shows override relationship (only when listing both scopes)
+  - SYNOPSIS: Brief description from front matter (with --full flag)
+
+PARAMETERS:
+  --scope, -s
+    Scope to list: "project" or "shared"
+    Omit to list both scopes with override detection
+    When specified, shows simplified 2-column output
+
+  --prefix, -p
+    Filter by path prefix
+    Examples: "auth/", "stories/042"
+    Useful for viewing docs in specific directories
+
+  --full, -f
+    Include synopsis column from doc front matter
+    Shows brief description of each doc
+
+COLOR CODING (both scopes mode):
+  • Cyan: Project docs
+  • Green: Shared docs
+
+EXAMPLES:
+  # List all docs from both scopes
+  swic doc list
+
+  # List only project docs
+  swic doc list --scope project
+
+  # List docs in auth/ directory
+  swic doc list --prefix auth/
+
+  # List with synopsis descriptions
+  swic doc list --full
+
+  # List shared docs starting with "workflows/"
+  swic doc list -s shared -p workflows/`)
         .param((p) => p
             .name('scope')
             .type('string')

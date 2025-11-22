@@ -8,6 +8,65 @@ import { join } from 'path';
 const edit = (services: CoreServices) => {
     return createCommand('edit')
         .summary('Edit a template')
+        .description(`Edits a template using text replacement or interactive editor.
+
+Supports two modes:
+  1. Interactive mode: Opens template in $EDITOR for full editing
+  2. Replace mode: Performs targeted text replacements (once, all, or regex)
+
+PARAMETERS:
+  identifier
+    Template identifier - can be template ID or path
+    Template IDs: tpl001 (project), stpl001 (shared)
+    Paths: prompts/story-init.md, workflows/deploy.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (tpl=project, stpl=shared)
+
+  --interactive, -i
+    Open template in $EDITOR for full editing
+    Defaults to vi if EDITOR not set
+    Cannot be combined with --old/--new/--mode
+
+  --old
+    Text to find and replace
+    Required when not using --interactive
+    For regex mode, can use /pattern/flags format
+
+  --new
+    Replacement text
+    Required when not using --interactive
+
+  --mode, -m
+    Replacement mode: "once", "all", or "regex"
+    Defaults to "once"
+      • once: Replace first occurrence only
+      • all: Replace all occurrences
+      • regex: Pattern-based replacement
+
+REPLACE MODES:
+  once  - Replaces only the first occurrence (safest)
+  all   - Replaces all occurrences throughout the template
+  regex - Pattern-based replacement with regex support
+          Use /pattern/flags format or just the pattern
+
+EXAMPLES:
+  # Interactive editing
+  swic template edit prompts/init.md --interactive
+
+  # Replace first occurrence
+  swic template edit tpl001 --old "{{name}}" --new "{{projectName}}"
+
+  # Replace all occurrences
+  swic template edit prompts/init.md --old "TODO" --new "DONE" --mode all
+
+  # Regex replacement
+  swic template edit tpl001 --old "/v\d+\.\d+/g" --new "v2.0" --mode regex
+
+  # Edit shared template
+  swic template edit common/base.md -s shared -i`)
         .param((p) => p
             .name('identifier')
             .type('string')

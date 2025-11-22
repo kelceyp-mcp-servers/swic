@@ -33,6 +33,48 @@ const confirmPrompt = (message: string): Promise<boolean> => {
 const create = (services: CoreServices) => {
     return createCommand('delete')
         .summary('Delete doc(s) - comma-separated (auto-resolves scope, requires confirmation)')
+        .description(`Deletes one or more docs permanently.
+
+Supports bulk deletion with comma-separated identifiers. Prompts for confirmation
+unless --confirm flag is provided. Operation is idempotent - doesn't error if
+doc is already deleted.
+
+PARAMETERS:
+  identifier
+    Doc identifier(s) - can be doc ID or path
+      • Single: doc001, auth/jwt-setup.md
+      • Multiple: doc001,doc002,auth/jwt.md (comma-separated)
+
+    Doc IDs: doc001 (project), sdoc001 (shared)
+    Paths: auth/jwt-setup.md, stories/042/spec.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (doc=project, sdoc=shared)
+
+  --confirm, -y
+    Skip confirmation prompt
+    Useful for scripts and automation
+    Use with caution - deletion is permanent
+
+CONFIRMATION:
+  - Single deletion: Prompts with doc path and ID
+  - Bulk deletion: Shows formatted list of docs, then prompts
+  - Skipped with --confirm flag
+
+EXAMPLES:
+  # Delete single doc (will prompt)
+  swic doc delete auth/old-notes.md
+
+  # Delete multiple docs (will prompt)
+  swic doc delete doc001,doc002,stories/deprecated.md
+
+  # Delete without confirmation
+  swic doc delete temp.md --confirm
+
+  # Delete from specific scope
+  swic doc delete old-workflow.md -s shared -y`)
         .param((p) => p
             .name('identifier')
             .type('string')

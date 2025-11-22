@@ -8,6 +8,53 @@ import { join } from 'path';
 const create = (services: CoreServices) => {
     return createCommand('create')
         .summary('Create a new template (defaults to project scope)')
+        .description(`Creates a new template with the specified content.
+
+Templates are reusable content patterns with parameter substitution capabilities.
+They must include front matter defining parameters and can be rendered with
+'swic template render'.
+
+PARAMETERS:
+  path
+    Path where the template will be created
+    Examples: prompts/story-init.md, workflows/deploy.md
+    Must be unique within the scope
+
+  --scope, -s
+    Scope for the new template: "project" or "shared"
+    Defaults to "project" if not specified
+      • project: Workspace-specific templates (.swic/templates/)
+      • shared: User-wide templates (~/.swic/templates/)
+
+  --content, -c
+    Template content (including front matter)
+    Can also be provided via stdin
+
+  --interactive, -i
+    Open template in $EDITOR for creation
+    Defaults to vi if EDITOR not set
+
+CONTENT SOURCES (choose one):
+  1. --content flag: Provide content inline
+  2. stdin: Pipe or redirect content
+  3. --interactive: Edit in your preferred editor
+
+EXAMPLES:
+  # Create from stdin
+  cat template.md | swic template create prompts/init.md
+
+  # Create with inline content
+  swic template create prompts/hello.md --content "---
+  parameters:
+    name: { type: string, required: true }
+  ---
+  Hello {{name}}!"
+
+  # Create interactively in editor
+  swic template create workflows/deploy.md --interactive
+
+  # Create in shared scope
+  swic template create common/header.md -s shared -c "# {{title}}"`)
         .param((p) => p
             .name('path')
             .type('string')

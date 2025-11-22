@@ -8,6 +8,51 @@ import { join } from 'path';
 const create = (services: CoreServices) => {
     return createCommand('create')
         .summary('Create a new doc (defaults to project scope)')
+        .description(`Creates a new documentation file with the specified content.
+
+Docs are markdown files used for storing project knowledge, workflows, specs,
+and other documentation. They support front matter for metadata and can be
+organized hierarchically by path.
+
+PARAMETERS:
+  path
+    Path where the doc will be created
+    Examples: auth/jwt-setup.md, workflows/deploy.md, stories/001/spec.md
+    Must be unique within the scope
+
+  --scope, -s
+    Scope for the new doc: "project" or "shared"
+    Defaults to "project" if not specified
+      • project: Workspace-specific docs (.swic/docs/)
+      • shared: User-wide docs (~/.swic/docs/)
+
+  --content, -c
+    Doc content (markdown with optional front matter)
+    Can also be provided via stdin
+
+  --interactive, -i
+    Open doc in $EDITOR for creation
+    Defaults to vi if EDITOR not set
+
+CONTENT SOURCES (choose one):
+  1. --content flag: Provide content inline
+  2. stdin: Pipe or redirect content
+  3. --interactive: Edit in your preferred editor
+
+EXAMPLES:
+  # Create from stdin
+  cat spec.md | swic doc create stories/042/spec.md
+
+  # Create with inline content
+  swic doc create auth/jwt.md --content "# JWT Authentication
+
+  Implementation notes for JWT auth..."
+
+  # Create interactively in editor
+  swic doc create workflows/deploy.md --interactive
+
+  # Create in shared scope
+  swic doc create common/coding-standards.md -s shared -i`)
         .param((p) => p
             .name('path')
             .type('string')

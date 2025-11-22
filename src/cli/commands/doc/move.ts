@@ -33,6 +33,61 @@ const confirmPrompt = (message: string): Promise<boolean> => {
 const create = (services: CoreServices) => {
     return createCommand('move')
         .summary('Move/rename a doc to a new path (generates new ID)')
+        .description(`Moves or renames a doc, optionally across scopes.
+
+Generates a new ID for the doc at the destination. Supports cross-scope moves
+(e.g., from project to shared). Prompts for confirmation unless --confirm flag
+is provided.
+
+PARAMETERS:
+  source
+    Source doc identifier - can be doc ID or path
+    Doc IDs: doc001 (project), sdoc001 (shared)
+    Paths: auth/jwt-setup.md, stories/042/spec.md
+
+  destination
+    Destination path (not ID)
+    Must be a path, not a doc ID
+    Examples: auth/new-name.md, stories/043/spec.md
+
+  --scope, -s
+    Source scope: "project" or "shared"
+    Optional - auto-resolves if omitted
+    Can be inferred from ID prefix (doc=project, sdoc=shared)
+
+  --to-scope, -t
+    Destination scope: "project" or "shared"
+    Defaults to source scope if not specified
+    Use to move docs between scopes
+
+  --confirm, -y
+    Skip confirmation prompt
+    Useful for scripts and automation
+
+CROSS-SCOPE MOVES:
+  Use --to-scope to move a doc from one scope to another:
+    • project → shared: Make a project doc available globally
+    • shared → project: Customize a shared doc for this workspace
+
+NEW ID GENERATION:
+  All moves generate a new ID, even within the same scope. This ensures
+  that IDs are stable and uniquely identify a doc at a specific path.
+
+EXAMPLES:
+  # Rename doc within same scope
+  swic doc move auth/old.md auth/new.md
+
+  # Move by doc ID
+  swic doc move doc001 stories/043/spec.md
+
+  # Move from project to shared scope
+  swic doc move workflows/common.md shared/workflows/common.md --to-scope shared
+
+  # Move from shared to project (customize)
+  swic doc move common/base.md custom/base.md -s shared -t project
+
+  # Move without confirmation
+  swic doc move old.md new.md --confirm`)
         .param((p) => p
             .name('source')
             .type('string')

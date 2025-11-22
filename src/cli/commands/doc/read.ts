@@ -15,6 +15,44 @@ import docAddressResolver from '../../../core/utils/DocAddressResolver.js';
 const create = (services: CoreServices) => {
     return createCommand('read')
         .summary('Read doc(s) - comma-separated (auto-resolves scope)')
+        .description(`Reads and displays the content of one or more docs.
+
+Supports bulk reading by providing comma-separated identifiers.
+Output includes the doc content and optionally metadata headers.
+
+PARAMETERS:
+  identifier
+    Doc identifier(s) - can be doc ID or path
+      • Single: doc001, auth/jwt-setup.md
+      • Multiple: doc001,doc002,auth/jwt.md (comma-separated)
+
+    Doc IDs: doc001 (project), sdoc001 (shared)
+    Paths: auth/jwt-setup.md, stories/042/spec.md
+
+  --scope, -s
+    Scope to search in: "project" or "shared"
+    Optional - auto-resolves if omitted (checks project first, then shared)
+    Can be inferred from ID prefix (doc=project, sdoc=shared)
+
+  --meta, -m
+    Include metadata header with ID and path
+    Useful for debugging or verifying doc location
+
+EXAMPLES:
+  # Read single doc by path
+  swic doc read auth/jwt-setup.md
+
+  # Read by doc ID
+  swic doc read doc001
+
+  # Read multiple docs
+  swic doc read doc001,doc002,stories/042/spec.md
+
+  # Read with metadata
+  swic doc read auth/jwt.md --meta
+
+  # Read from specific scope
+  swic doc read coding-standards.md -s shared`)
         .param((p) => p
             .name('identifier')
             .type('string')
