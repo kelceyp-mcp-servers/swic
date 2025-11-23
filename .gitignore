@@ -82,6 +82,9 @@ temp/
 *.tmp
 *.temp
 
+# Git worktrees
+worktrees/
+
 # Logs
 logs/
 *.log
